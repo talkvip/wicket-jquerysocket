@@ -283,6 +283,8 @@ public class StreamServlet extends HttpServlet implements StreamMessageDestinati
 			}
 		});
 		asyncContexts.put(id, ac);
+
+		writer.close();
 	}
 
 	/**
@@ -315,7 +317,8 @@ public class StreamServlet extends HttpServlet implements StreamMessageDestinati
 	}
 
 	/**
-	 * @see nl.topicuszorg.wicket.jquerystream.StreamMessageDestination#addDisconnectEventListener(java.lang.String, nl.topicuszorg.wicket.jquerystream.DisconnectEventListener)
+	 * @see nl.topicuszorg.wicket.jquerystream.StreamMessageDestination#addDisconnectEventListener(java.lang.String,
+	 *      nl.topicuszorg.wicket.jquerystream.DisconnectEventListener)
 	 */
 	@Override
 	public void addDisconnectEventListener(String clientid, DisconnectEventListener eventListener)
