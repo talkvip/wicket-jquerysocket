@@ -25,6 +25,33 @@ With jQuery Stream, you can easily develop event-driven web application.
 			<organizationUrl>http://www.topicuszorg.nl/</organizationUrl>
 		</developer>
 	</developers>
+	
+	<distributionManagement>
+		<repository>
+			<id>deployment.external</id>
+			<name>Internal Release Repository</name>
+			<url>http://vaatwasser:8081/nexus/content/repositories/external-releases/</url>
+			<uniqueVersion>false</uniqueVersion>
+		</repository>
+		<snapshotRepository>
+			<id>deployment.external</id>
+			<name>Internal Release Repository</name>
+			<url>http://vaatwasser:8081/nexus/content/repositories/external-snapshot//</url>
+			<uniqueVersion>false</uniqueVersion>
+		</snapshotRepository>
+	</distributionManagement>
+	
+	<scm>
+		<connection>
+			scm:git://github.com/svenrienstra/wicket-jquerystream.git
+		</connection>
+		<developerConnection>
+			scm:git://github.com/svenrienstra/wicket-jquerystream.git
+		</developerConnection>
+		<url>
+			https://github.com/svenrienstra/wicket-jquerystream
+		</url>
+	</scm>
 
 	<build>
 		<resources>
