@@ -43,13 +43,13 @@ With jQuery Stream, you can easily develop event-driven web application.
 	
 	<scm>
 		<connection>
-			scm:git:git@github.com/TopicusZorg/wicket-jquerystream.git
+			scm:git:git://github.com/TopicusZorg/wicket-jquerystream.git
 		</connection>
 		<developerConnection>
-			scm:git:git@github.com/TopicusZorg/wicket-jquerystream.git
+			scm:git:ssh://git@github.com/TopicusZorg/wicket-jquerystream.git
 		</developerConnection>
 		<url>
-			scm:git:git@github.com/TopicusZorg/wicket-jquerystream.git
+			https://github.com/TopicusZorg/wicket-jquerystream.git
 		</url>
 	</scm>
 
