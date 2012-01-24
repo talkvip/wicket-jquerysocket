@@ -8,7 +8,9 @@ import java.util.UUID;
 
 import nl.topicuszorg.wicket.jquerystream.js.StreamResourceReference;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
+import org.apache.wicket.event.IEvent;
 import org.apache.wicket.markup.html.IHeaderResponse;
 import org.apache.wicket.util.collections.MiniMap;
 import org.apache.wicket.util.template.PackageTextTemplate;
@@ -32,6 +34,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	/** Client id */
 	private final String clientid;
 
+	/** Callback to this behavior */
 	private String callBack;
 
 	/**
@@ -66,6 +69,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	/**
 	 * Zorg ervoor dat de client een callback maakt naar deze behavior
 	 */
+	@Deprecated
 	public void triggerUpdate()
 	{
 		pushJavaScript(callBack);
@@ -76,6 +80,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	 * 
 	 * @param javaScript
 	 */
+	@Deprecated
 	public void pushJavaScript(CharSequence javaScript)
 	{
 		JQueryStreamService.sendMessage(clientid, javaScript.toString());
@@ -113,5 +118,30 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	public String getClientid()
 	{
 		return clientid;
+	}
+
+	/**
+	 * @see org.apache.wicket.behavior.Behavior#onEvent(org.apache.wicket.Component, org.apache.wicket.event.IEvent)
+	 */
+	@Override
+	public void onEvent(Component component, IEvent<?> event)
+	{
+		if (event.getPayload() instanceof IPushUpdateEvent)
+		{
+			IPushUpdateEvent pushUpdateEvent = (IPushUpdateEvent) event;
+			if (StringUtils.isBlank(pushUpdateEvent.getClientId()) || pushUpdateEvent.getClientId().equals(clientid))
+			{
+				JQueryStreamService.sendMessage(clientid, callBack);
+			}
+		}
+		else if (event.getPayload() instanceof IPushJavaScriptEvent)
+		{
+			IPushJavaScriptEvent pushJavaScriptEvent = (IPushJavaScriptEvent) event;
+			if (StringUtils.isBlank(pushJavaScriptEvent.getClientId())
+				|| pushJavaScriptEvent.getClientId().equals(clientid))
+			{
+				JQueryStreamService.sendMessage(clientid, pushJavaScriptEvent.getJavaScript());
+			}
+		}
 	}
 }
