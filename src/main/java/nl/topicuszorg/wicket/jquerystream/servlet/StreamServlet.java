@@ -24,16 +24,20 @@ import javax.servlet.http.HttpServletResponse;
 
 import net.sf.json.JSON;
 import nl.topicuszorg.wicket.jquerystream.DisconnectEventListener;
-import nl.topicuszorg.wicket.jquerystream.StreamMessageDestination;
+import nl.topicuszorg.wicket.jquerystream.IStreamMessageDestination;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author sven
+ * Servlet to push messages to clients
+ * 
+ * 
+ * @author Sven Rienstra
+ * @author Dries Schulten
  * 
  */
-public class StreamServlet extends HttpServlet implements StreamMessageDestination
+public class StreamServlet extends HttpServlet implements IStreamMessageDestination
 {
 	/** */
 	private static final long serialVersionUID = 1L;
@@ -44,15 +48,13 @@ public class StreamServlet extends HttpServlet implements StreamMessageDestinati
 	/** Stream servlet attribute */
 	public static final String STREAM_SERVLET_ATTRIBUTE = "streamservlet";
 
-	/**
-	 * Async contexts
-	 */
+	/** Async contexts */
 	private final Map<String, AsyncContext> asyncContexts = new ConcurrentHashMap<String, AsyncContext>();
 
 	/** Disconnect event listeners */
 	private final Map<String, DisconnectEventListener> disconnectListeners = new ConcurrentHashMap<String, DisconnectEventListener>();
 
-	/** Per disconnect listener tijd van toevoegen */
+	/** For each client a timestamp of when it was last seen */
 	private final Map<String, Date> disconnectListenerDate = new ConcurrentHashMap<String, Date>();
 
 	/**
@@ -128,7 +130,7 @@ public class StreamServlet extends HttpServlet implements StreamMessageDestinati
 	});
 
 	/**
-	 * Zoek naar gedisconnecte clients
+	 * Thread to find disconnected clients
 	 */
 	private final Thread disconnectThread = new Thread(new Runnable()
 	{
@@ -300,7 +302,7 @@ public class StreamServlet extends HttpServlet implements StreamMessageDestinati
 	}
 
 	/**
-	 * @see nl.topicuszorg.wicket.jquerystream.StreamMessageDestination#sendMessage(java.lang.String)
+	 * @see nl.topicuszorg.wicket.jquerystream.IStreamMessageDestination#sendMessage(java.lang.String)
 	 */
 	@Override
 	public void sendMessage(String clientid, JSON json)
@@ -317,7 +319,7 @@ public class StreamServlet extends HttpServlet implements StreamMessageDestinati
 	}
 
 	/**
-	 * @see nl.topicuszorg.wicket.jquerystream.StreamMessageDestination#addDisconnectEventListener(java.lang.String,
+	 * @see nl.topicuszorg.wicket.jquerystream.IStreamMessageDestination#addDisconnectEventListener(java.lang.String,
 	 *      nl.topicuszorg.wicket.jquerystream.DisconnectEventListener)
 	 */
 	@Override
@@ -328,7 +330,7 @@ public class StreamServlet extends HttpServlet implements StreamMessageDestinati
 	}
 
 	/**
-	 * Het message
+	 * Internal message structure
 	 * 
 	 * @author sven
 	 * 

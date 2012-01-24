@@ -6,20 +6,21 @@ package nl.topicuszorg.wicket.jquerystream;
 import net.sf.json.JSON;
 
 /**
- * @author sven
+ * Interface for destination
+ * @author Sven Rienstra
  *
  */
-public interface StreamMessageDestination
+public interface IStreamMessageDestination
 {
 	/**
-	 * Stuur message
-	 * @param json json data
-	 * @param clientid Id van de client waar het bericht heen moet, optioneel
+	 * Send message to client
+	 * @param json The json data
+	 * @param clientid Optional id of the target client, if null the message will be send to all the clients
 	 */
 	void sendMessage(String clientid, JSON json);
 
 	/**
-	 * Voeg disconnect event listener toe
+	 * Add disconnect listener
 	 * @param eventListener
 	 * @param clientid
 	 */

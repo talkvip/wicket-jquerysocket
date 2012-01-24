@@ -1,12 +1,12 @@
 /**
  * 
  */
-package nl.topicuszorg.wicket.jquerystream;
+package nl.topicuszorg.wicket.jquerystream.events;
 
 /**
  * Event to trigger a callback to the JQueryStreamBehavior
  * 
- * @author sven
+ * @author Sven Rienstra
  * 
  */
 public interface IPushUpdateEvent

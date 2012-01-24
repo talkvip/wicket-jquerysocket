@@ -6,10 +6,14 @@ package nl.topicuszorg.wicket.jquerystream;
 import java.util.Map;
 import java.util.UUID;
 
+import nl.topicuszorg.wicket.jquerystream.events.IPushJavaScriptEvent;
+import nl.topicuszorg.wicket.jquerystream.events.IPushUpdateEvent;
 import nl.topicuszorg.wicket.jquerystream.js.StreamResourceReference;
+import nl.topicuszorg.wicket.jquerystream.servlet.StreamServlet;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
+import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.event.IEvent;
 import org.apache.wicket.markup.html.IHeaderResponse;
 import org.apache.wicket.util.collections.MiniMap;
@@ -20,7 +24,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * @author sven
+ * <p>
+ * There are two ways to use this behaviour. 
+ * You can either push JavaScript to client which will be executed or you can trigger a callback from the client to this behaviour, {@link #respond(AjaxRequestTarget target)} will be called.
+ * </P>
+ * 
+ * <p>In both cases you will need to add this behaviour to your page or panel, also you will need to add the {@link StreamServlet} to you web.xml.</p>
+ * 
+ * <p>If you want to push JavaScript to the client implement the {@link IPushJavaScriptEvent} interface and send a Wicket event using {@link Component#send(org.apache.wicket.event.IEventSink, org.apache.wicket.event.Broadcast, Object)} with the implementation of the {@link IPushJavaScriptEvent} as payload.<p>
+ * 
+ * <p>If you want to trigger a callback to this behaviour implement the {@link IPushUpdateEvent} interface and send a Wicket event using {@link Component#send(org.apache.wicket.event.IEventSink, org.apache.wicket.event.Broadcast, Object)} with the implementation of the {@link IPushUpdateEvent} as payload.<p>
+ * 
+ * @author Sven Rienstra
+ * @author Dries schulten
  * 
  */
 public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
@@ -49,6 +65,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	 * 
 	 * @param eventListener
 	 *            disconnect event listener
+	 * @see DisconnectEventListener
 	 */
 	public JQueryStreamBehavior(DisconnectEventListener eventListener)
 	{
@@ -67,7 +84,8 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	}
 
 	/**
-	 * Zorg ervoor dat de client een callback maakt naar deze behavior
+	 * Make a callback to this behaviour
+	 * @deprecated use wicket event system
 	 */
 	@Deprecated
 	public void triggerUpdate()
@@ -76,9 +94,10 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	}
 
 	/**
-	 * Push javascript naar de client
+	 * Push JavaScript to client
 	 * 
 	 * @param javaScript
+	 * @deprecated use wicket event system
 	 */
 	@Deprecated
 	public void pushJavaScript(CharSequence javaScript)

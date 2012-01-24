@@ -9,14 +9,15 @@ import nl.topicuszorg.wicket.jquerystream.servlet.StreamServlet;
 import org.apache.wicket.protocol.http.WebApplication;
 
 /**
- * @author sven
+ * Internal class to pass messages to the correct destination
+ * @author Sven Rienstra
  *
  */
 public final class JQueryStreamService
 {
 
 	/** Push target */
-	private static StreamMessageDestination destination;
+	private static IStreamMessageDestination destination;
 
 	/**
 	 * Util class
@@ -30,7 +31,7 @@ public final class JQueryStreamService
 	 * @param clientid
 	 * @param javascript
 	 */
-	public static void sendMessage(String clientid, String javascript)
+	protected static void sendMessage(String clientid, String javascript)
 	{
 		JSONObject json = new JSONObject();
 		json.put("javascript", javascript);
@@ -48,7 +49,7 @@ public final class JQueryStreamService
 	}
 
 	/**
-	 * Voeg disconnect event listener toe
+	 * Add disconnect event listener
 	 * @param eventListener
 	 */
 	protected static void addDisconnectEventListener(String clientid, DisconnectEventListener eventListener)
@@ -57,15 +58,15 @@ public final class JQueryStreamService
 	}
 
 	/**
-	 * Haal destination op
+	 * Find destination
 	 * @return
 	 */
-	private static StreamMessageDestination getDestination()
+	private static IStreamMessageDestination getDestination()
 	{
-		// Enige manier die we momenteel kennen is via een servlet
+		// At this moment our only implementation of a destination is the servlet
 		if (destination == null)
 		{
-			destination = (StreamMessageDestination) WebApplication.get().getServletContext()
+			destination = (IStreamMessageDestination) WebApplication.get().getServletContext()
 				.getAttribute(StreamServlet.STREAM_SERVLET_ATTRIBUTE);
 			if (destination == null)
 			{

@@ -1,8 +1,8 @@
-package nl.topicuszorg.wicket.jquerystream;
+package nl.topicuszorg.wicket.jquerystream.events;
 
 /**
  * Event to push JavaScript to a client
- * @author sven
+ * @author Sven Rienstra
  *
  */
 public interface IPushJavaScriptEvent

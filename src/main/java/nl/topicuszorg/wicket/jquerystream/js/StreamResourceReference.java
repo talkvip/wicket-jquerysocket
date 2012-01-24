@@ -5,9 +5,9 @@ import org.apache.wicket.RuntimeConfigurationType;
 import org.apache.wicket.request.resource.JavaScriptResourceReference;
 
 /**
- * Resource reference
+ * Resource reference to the jquery stream javascript files
  * 
- * @author schulten
+ * @author Dries Schulten
  */
 public class StreamResourceReference extends JavaScriptResourceReference
 {
@@ -33,7 +33,7 @@ public class StreamResourceReference extends JavaScriptResourceReference
 		return INSTANCE;
 	}
 
-	/** Pak volledige javascript in development mode */
+	/** In development mode use full javascript */
 	private static String getResourceName()
 	{
 		if (Application.get().getConfigurationType() == RuntimeConfigurationType.DEVELOPMENT)
