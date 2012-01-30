@@ -93,6 +93,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					else
 					{
 						AsyncContext asyncContext = asyncContexts.get(message.getClientId());
+
 						if (asyncContext != null)
 						{
 							LOG.debug("Send message to " + message.getClientId());
@@ -124,6 +125,8 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 			}
 			catch (Exception e)
 			{
+				LOG.debug("Got an exception while sending message " + json.toString(), e);
+
 				asyncContexts.values().remove(asyncContext);
 			}
 		}
@@ -216,7 +219,6 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
 	{
-
 		// Content-Type header
 		response.setContentType("text/plain");
 		response.setCharacterEncoding("utf-8");
@@ -242,51 +244,52 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 		writer.print(';');
 		writer.flush();
 
-		final AsyncContext ac = request.startAsync();
-		ac.addListener(new AsyncListener()
+		if (request.isAsyncSupported())
 		{
-			/**
-			 * @see javax.servlet.AsyncListener#onComplete(javax.servlet.AsyncEvent)
-			 */
-			@Override
-			public void onComplete(AsyncEvent event) throws IOException
+			final AsyncContext ac = request.startAsync();
+			ac.addListener(new AsyncListener()
 			{
-				LOG.debug("client " + id + " completed");
-				asyncContexts.remove(id);
-			}
+				/**
+				 * @see javax.servlet.AsyncListener#onComplete(javax.servlet.AsyncEvent)
+				 */
+				@Override
+				public void onComplete(AsyncEvent event) throws IOException
+				{
+					LOG.debug("client " + id + " completed");
+					asyncContexts.remove(id);
+				}
 
-			/**
-			 * @see javax.servlet.AsyncListener#onTimeout(javax.servlet.AsyncEvent)
-			 */
-			@Override
-			public void onTimeout(AsyncEvent event) throws IOException
-			{
-				LOG.debug("client " + id + " timed out");
-				asyncContexts.remove(id);
-			}
+				/**
+				 * @see javax.servlet.AsyncListener#onTimeout(javax.servlet.AsyncEvent)
+				 */
+				@Override
+				public void onTimeout(AsyncEvent event) throws IOException
+				{
+					LOG.debug("client " + id + " timed out");
+					asyncContexts.remove(id);
+				}
 
-			/**
-			 * @see javax.servlet.AsyncListener#onError(javax.servlet.AsyncEvent)
-			 */
-			@Override
-			public void onError(AsyncEvent event) throws IOException
-			{
-				LOG.debug("client " + id + " got an error");
-				asyncContexts.remove(id);
-			}
+				/**
+				 * @see javax.servlet.AsyncListener#onError(javax.servlet.AsyncEvent)
+				 */
+				@Override
+				public void onError(AsyncEvent event) throws IOException
+				{
+					LOG.debug("client " + id + " got an error");
+					asyncContexts.remove(id);
+				}
 
-			/**
-			 * @see javax.servlet.AsyncListener#onStartAsync(javax.servlet.AsyncEvent)
-			 */
-			@Override
-			public void onStartAsync(AsyncEvent event) throws IOException
-			{
+				/**
+				 * @see javax.servlet.AsyncListener#onStartAsync(javax.servlet.AsyncEvent)
+				 */
+				@Override
+				public void onStartAsync(AsyncEvent event) throws IOException
+				{
 
-			}
-		});
-		asyncContexts.put(id, ac);
-
-		writer.close();
+				}
+			});
+			asyncContexts.put(id, ac);
+		}
 	}
 
 	/**

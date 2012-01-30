@@ -25,15 +25,27 @@ import org.slf4j.LoggerFactory;
 
 /**
  * <p>
- * There are two ways to use this behaviour. 
- * You can either push JavaScript to client which will be executed or you can trigger a callback from the client to this behaviour, {@link #respond(AjaxRequestTarget target)} will be called.
+ * There are two ways to use this behaviour. You can either push JavaScript to client which will be executed or you can
+ * trigger a callback from the client to this behaviour, {@link #respond(AjaxRequestTarget target)} will be called.
  * </P>
  * 
- * <p>In both cases you will need to add this behaviour to your page or panel, also you will need to add the {@link StreamServlet} to you web.xml.</p>
+ * <p>
+ * In both cases you will need to add this behaviour to your page or panel, also you will need to add the
+ * {@link StreamServlet} to you web.xml.
+ * </p>
  * 
- * <p>If you want to push JavaScript to the client implement the {@link IPushJavaScriptEvent} interface and send a Wicket event using {@link Component#send(org.apache.wicket.event.IEventSink, org.apache.wicket.event.Broadcast, Object)} with the implementation of the {@link IPushJavaScriptEvent} as payload.<p>
+ * <p>
+ * If you want to push JavaScript to the client implement the {@link IPushJavaScriptEvent} interface and send a Wicket
+ * event using {@link Component#send(org.apache.wicket.event.IEventSink, org.apache.wicket.event.Broadcast, Object)}
+ * with the implementation of the {@link IPushJavaScriptEvent} as payload.
+ * <p>
  * 
- * <p>If you want to trigger a callback to this behaviour implement the {@link IPushUpdateEvent} interface and send a Wicket event using {@link Component#send(org.apache.wicket.event.IEventSink, org.apache.wicket.event.Broadcast, Object)} with the implementation of the {@link IPushUpdateEvent} as payload.<p>
+ * <p>
+ * If you want to trigger a callback to this behaviour implement the {@link IPushUpdateEvent} interface and send a
+ * Wicket event using
+ * {@link Component#send(org.apache.wicket.event.IEventSink, org.apache.wicket.event.Broadcast, Object)} with the
+ * implementation of the {@link IPushUpdateEvent} as payload.
+ * <p>
  * 
  * @author Sven Rienstra
  * @author Dries schulten
@@ -85,6 +97,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 
 	/**
 	 * Make a callback to this behaviour
+	 * 
 	 * @deprecated use wicket event system
 	 */
 	@Deprecated
@@ -147,7 +160,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	{
 		if (event.getPayload() instanceof IPushUpdateEvent)
 		{
-			IPushUpdateEvent pushUpdateEvent = (IPushUpdateEvent) event;
+			IPushUpdateEvent pushUpdateEvent = (IPushUpdateEvent) event.getPayload();
 			if (StringUtils.isBlank(pushUpdateEvent.getClientId()) || pushUpdateEvent.getClientId().equals(clientid))
 			{
 				JQueryStreamService.sendMessage(clientid, callBack);
@@ -155,7 +168,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 		}
 		else if (event.getPayload() instanceof IPushJavaScriptEvent)
 		{
-			IPushJavaScriptEvent pushJavaScriptEvent = (IPushJavaScriptEvent) event;
+			IPushJavaScriptEvent pushJavaScriptEvent = (IPushJavaScriptEvent) event.getPayload();
 			if (StringUtils.isBlank(pushJavaScriptEvent.getClientId())
 				|| pushJavaScriptEvent.getClientId().equals(clientid))
 			{
