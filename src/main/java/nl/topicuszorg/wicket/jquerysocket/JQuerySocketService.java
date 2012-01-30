@@ -1,19 +1,19 @@
 /**
  * 
  */
-package nl.topicuszorg.wicket.jquerystream;
+package nl.topicuszorg.wicket.jquerysocket;
 
 import net.sf.json.JSONObject;
-import nl.topicuszorg.wicket.jquerystream.servlet.StreamServlet;
+import nl.topicuszorg.wicket.jquerysocket.servlet.StreamServlet;
 
 import org.apache.wicket.protocol.http.WebApplication;
 
 /**
  * Internal class to pass messages to the correct destination
+ * 
  * @author Sven Rienstra
- *
  */
-public final class JQueryStreamService
+public final class JQuerySocketService
 {
 
 	/** Push target */
@@ -22,12 +22,13 @@ public final class JQueryStreamService
 	/**
 	 * Util class
 	 */
-	private JQueryStreamService()
+	private JQuerySocketService()
 	{
 	}
 
 	/**
 	 * Send message
+	 * 
 	 * @param clientid
 	 * @param javascript
 	 */
@@ -41,6 +42,7 @@ public final class JQueryStreamService
 
 	/**
 	 * Get servlet url
+	 * 
 	 * @return
 	 */
 	protected static String getServletUrl()
@@ -50,6 +52,7 @@ public final class JQueryStreamService
 
 	/**
 	 * Add disconnect event listener
+	 * 
 	 * @param eventListener
 	 */
 	protected static void addDisconnectEventListener(String clientid, DisconnectEventListener eventListener)
@@ -59,6 +62,7 @@ public final class JQueryStreamService
 
 	/**
 	 * Find destination
+	 * 
 	 * @return
 	 */
 	private static IStreamMessageDestination getDestination()

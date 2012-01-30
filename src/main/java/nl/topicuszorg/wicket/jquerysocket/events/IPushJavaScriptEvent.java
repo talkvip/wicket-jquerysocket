@@ -1,4 +1,4 @@
-package nl.topicuszorg.wicket.jquerystream.events;
+package nl.topicuszorg.wicket.jquerysocket.events;
 
 /**
  * Event to push JavaScript to a client

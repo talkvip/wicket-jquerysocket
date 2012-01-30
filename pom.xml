@@ -2,8 +2,8 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>nl.topicuszorg.wicket-extensions</groupId>
-	<artifactId>wicket-jquerystream</artifactId>
-	<version>0.0.2-SNAPSHOT</version>
+	<artifactId>wicket-jquerysocket</artifactId>
+	<version>0.1.0-SNAPSHOT</version>
 	<name>JQueryStream</name>
 	<description>jQuery Stream makes it easier to use two-way communication with browser-based applications and provides the unified two-way communication interface over WebSocket and HTTP protocol.
 jQuery Stream does not rely on any specific server-side technology and third-party plugin-in, so can be used with any server-side technology supporting asynchronous processing. jQuery Stream is compatible with Internet Explorer 6.0+, Firefox, Safari, Opera and Chrome.

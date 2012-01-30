@@ -1,15 +1,15 @@
 /**
  * 
  */
-package nl.topicuszorg.wicket.jquerystream;
+package nl.topicuszorg.wicket.jquerysocket;
 
 import java.util.Map;
 import java.util.UUID;
 
-import nl.topicuszorg.wicket.jquerystream.events.IPushJavaScriptEvent;
-import nl.topicuszorg.wicket.jquerystream.events.IPushUpdateEvent;
-import nl.topicuszorg.wicket.jquerystream.js.StreamResourceReference;
-import nl.topicuszorg.wicket.jquerystream.servlet.StreamServlet;
+import nl.topicuszorg.wicket.jquerysocket.events.IPushJavaScriptEvent;
+import nl.topicuszorg.wicket.jquerysocket.events.IPushUpdateEvent;
+import nl.topicuszorg.wicket.jquerysocket.js.SocketResourceReference;
+import nl.topicuszorg.wicket.jquerysocket.servlet.StreamServlet;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
@@ -51,13 +51,13 @@ import org.slf4j.LoggerFactory;
  * @author Dries schulten
  * 
  */
-public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
+public abstract class JQuerySocketBehavior extends WiQueryAbstractAjaxBehavior
 {
 	/** */
 	private static final long serialVersionUID = 1L;
 
 	/** Default logger */
-	private static final Logger LOG = LoggerFactory.getLogger(JQueryStreamBehavior.class);
+	private static final Logger LOG = LoggerFactory.getLogger(JQuerySocketBehavior.class);
 
 	/** Client id */
 	private final String clientid;
@@ -68,7 +68,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	/**
 	 * Constructor
 	 */
-	public JQueryStreamBehavior()
+	public JQuerySocketBehavior()
 	{
 		clientid = UUID.randomUUID().toString();
 	}
@@ -79,10 +79,10 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	 *            disconnect event listener
 	 * @see DisconnectEventListener
 	 */
-	public JQueryStreamBehavior(DisconnectEventListener eventListener)
+	public JQuerySocketBehavior(DisconnectEventListener eventListener)
 	{
 		this();
-		JQueryStreamService.addDisconnectEventListener(clientid, eventListener);
+		JQuerySocketService.addDisconnectEventListener(clientid, eventListener);
 	}
 
 	/**
@@ -115,7 +115,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	@Deprecated
 	public void pushJavaScript(CharSequence javaScript)
 	{
-		JQueryStreamService.sendMessage(clientid, javaScript.toString());
+		JQuerySocketService.sendMessage(clientid, javaScript.toString());
 	}
 
 	/**
@@ -126,11 +126,11 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	{
 		Map<String, Object> vars = new MiniMap<String, Object>(3);
 		vars.put("clientid", clientid);
-		vars.put("url", JQueryStreamService.getServletUrl());
+		vars.put("url", JQuerySocketService.getServletUrl());
 		vars.put("debug", LOG.isDebugEnabled());
 
-		return new JsStatement().append(new PackageTextTemplate(JQueryStreamBehavior.class,
-			"js/JQueryStreamBehavior.js").asString(vars));
+		return new JsStatement().append(new PackageTextTemplate(JQuerySocketBehavior.class,
+			"js/JQuerySocketBehavior.js").asString(vars));
 	}
 
 	/**
@@ -140,7 +140,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 	@Override
 	public void renderHead(Component component, IHeaderResponse response)
 	{
-		response.renderJavaScriptReference(StreamResourceReference.get());
+		response.renderJavaScriptReference(SocketResourceReference.get());
 		super.renderHead(component, response);
 	}
 
@@ -163,7 +163,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 			IPushUpdateEvent pushUpdateEvent = (IPushUpdateEvent) event.getPayload();
 			if (StringUtils.isBlank(pushUpdateEvent.getClientId()) || pushUpdateEvent.getClientId().equals(clientid))
 			{
-				JQueryStreamService.sendMessage(clientid, callBack);
+				JQuerySocketService.sendMessage(clientid, callBack);
 			}
 		}
 		else if (event.getPayload() instanceof IPushJavaScriptEvent)
@@ -172,7 +172,7 @@ public abstract class JQueryStreamBehavior extends WiQueryAbstractAjaxBehavior
 			if (StringUtils.isBlank(pushJavaScriptEvent.getClientId())
 				|| pushJavaScriptEvent.getClientId().equals(clientid))
 			{
-				JQueryStreamService.sendMessage(clientid, pushJavaScriptEvent.getJavaScript());
+				JQuerySocketService.sendMessage(clientid, pushJavaScriptEvent.getJavaScript());
 			}
 		}
 	}

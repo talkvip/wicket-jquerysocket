@@ -1,14 +1,14 @@
 /**
  * 
  */
-package nl.topicuszorg.wicket.jquerystream;
+package nl.topicuszorg.wicket.jquerysocket;
 
 /**
  * If you want to be informed when a client disconnects, implement this eventlistener.
  * 
  * 
  * @author Sven Rienstra
- * @see {@link JQueryStreamBehavior#JQueryStreamBehavior(DisconnectEventListener)}
+ * @see {@link JQuerySocketBehavior#JQueryStreamBehavior(DisconnectEventListener)}
  */
 public interface DisconnectEventListener
 {

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package nl.topicuszorg.wicket.jquerystream.events;
+package nl.topicuszorg.wicket.jquerysocket.events;
 
 /**
  * Event to trigger a callback to the JQueryStreamBehavior

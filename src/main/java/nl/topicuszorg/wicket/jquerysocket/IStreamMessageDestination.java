@@ -1,7 +1,7 @@
 /**
  * 
  */
-package nl.topicuszorg.wicket.jquerystream;
+package nl.topicuszorg.wicket.jquerysocket;
 
 import net.sf.json.JSON;
 

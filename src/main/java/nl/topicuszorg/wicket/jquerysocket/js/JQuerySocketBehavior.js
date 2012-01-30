@@ -1,5 +1,4 @@
-$.stream.setup({enableXDR: true});
-$.stream("${url}", {
+$.socket("${url}", {
         dataType: "json",
         type:"http",
         message: function(event) {

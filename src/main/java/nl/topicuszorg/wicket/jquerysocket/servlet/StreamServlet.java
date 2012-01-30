@@ -1,7 +1,7 @@
 /**
  * 
  */
-package nl.topicuszorg.wicket.jquerystream.servlet;
+package nl.topicuszorg.wicket.jquerysocket.servlet;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -23,8 +23,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import net.sf.json.JSON;
-import nl.topicuszorg.wicket.jquerystream.DisconnectEventListener;
-import nl.topicuszorg.wicket.jquerystream.IStreamMessageDestination;
+import nl.topicuszorg.wicket.jquerysocket.DisconnectEventListener;
+import nl.topicuszorg.wicket.jquerysocket.IStreamMessageDestination;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -305,7 +305,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	}
 
 	/**
-	 * @see nl.topicuszorg.wicket.jquerystream.IStreamMessageDestination#sendMessage(java.lang.String)
+	 * @see nl.topicuszorg.wicket.jquerysocket.IStreamMessageDestination#sendMessage(java.lang.String)
 	 */
 	@Override
 	public void sendMessage(String clientid, JSON json)
@@ -322,8 +322,8 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	}
 
 	/**
-	 * @see nl.topicuszorg.wicket.jquerystream.IStreamMessageDestination#addDisconnectEventListener(java.lang.String,
-	 *      nl.topicuszorg.wicket.jquerystream.DisconnectEventListener)
+	 * @see nl.topicuszorg.wicket.jquerysocket.IStreamMessageDestination#addDisconnectEventListener(java.lang.String,
+	 *      nl.topicuszorg.wicket.jquerysocket.DisconnectEventListener)
 	 */
 	@Override
 	public void addDisconnectEventListener(String clientid, DisconnectEventListener eventListener)

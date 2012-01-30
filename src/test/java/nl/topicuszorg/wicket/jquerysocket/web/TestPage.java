@@ -1,11 +1,11 @@
-package nl.topicuszorg.wicket.jquerystream.web;
+package nl.topicuszorg.wicket.jquerysocket.web;
 
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import nl.topicuszorg.wicket.jquerystream.JQueryStreamBehavior;
-import nl.topicuszorg.wicket.jquerystream.events.IPushJavaScriptEvent;
-import nl.topicuszorg.wicket.jquerystream.events.IPushUpdateEvent;
+import nl.topicuszorg.wicket.jquerysocket.JQuerySocketBehavior;
+import nl.topicuszorg.wicket.jquerysocket.events.IPushJavaScriptEvent;
+import nl.topicuszorg.wicket.jquerysocket.events.IPushUpdateEvent;
 
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
@@ -45,7 +45,7 @@ public class TestPage extends WebPage
 		datumLabel.setOutputMarkupId(true);
 		add(datumLabel);
 
-		final JQueryStreamBehavior streamBehavior = new JQueryStreamBehavior()
+		final JQuerySocketBehavior streamBehavior = new JQuerySocketBehavior()
 		{
 			/** Default */
 			private static final long serialVersionUID = 1L;
@@ -94,7 +94,7 @@ public class TestPage extends WebPage
 	private static class UpdateEvent implements IPushUpdateEvent
 	{
 		/**
-		 * @see nl.topicuszorg.wicket.jquerystream.events.IPushUpdateEvent#getClientId()
+		 * @see nl.topicuszorg.wicket.jquerysocket.events.IPushUpdateEvent#getClientId()
 		 */
 		@Override
 		public String getClientId()
@@ -110,7 +110,7 @@ public class TestPage extends WebPage
 	private static class JsEvent implements IPushJavaScriptEvent
 	{
 		/**
-		 * @see nl.topicuszorg.wicket.jquerystream.events.IPushJavaScriptEvent#getJavaScript()
+		 * @see nl.topicuszorg.wicket.jquerysocket.events.IPushJavaScriptEvent#getJavaScript()
 		 */
 		@Override
 		public String getJavaScript()
@@ -120,7 +120,7 @@ public class TestPage extends WebPage
 		}
 
 		/**
-		 * @see nl.topicuszorg.wicket.jquerystream.events.IPushJavaScriptEvent#getClientId()
+		 * @see nl.topicuszorg.wicket.jquerysocket.events.IPushJavaScriptEvent#getClientId()
 		 */
 		@Override
 		public String getClientId()

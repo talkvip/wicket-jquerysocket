@@ -1,4 +1,4 @@
-package nl.topicuszorg.wicket.jquerystream.web;
+package nl.topicuszorg.wicket.jquerysocket.web;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
