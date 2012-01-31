@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>nl.topicuszorg.wicket-extensions</groupId>
 	<artifactId>wicket-jquerystream</artifactId>
@@ -25,7 +26,7 @@ With jQuery Stream, you can easily develop event-driven web application.
 			<organizationUrl>http://www.topicuszorg.nl/</organizationUrl>
 		</developer>
 	</developers>
-	
+
 	<distributionManagement>
 		<repository>
 			<id>deployment.external</id>
@@ -40,7 +41,7 @@ With jQuery Stream, you can easily develop event-driven web application.
 			<uniqueVersion>false</uniqueVersion>
 		</snapshotRepository>
 	</distributionManagement>
-	
+
 	<scm>
 		<connection>
 			scm:git:git://github.com/TopicusZorg/wicket-jquerystream.git
@@ -143,38 +144,37 @@ With jQuery Stream, you can easily develop event-driven web application.
 		</plugins>
 		<extensions>
 			<extension>
-               	<groupId>org.apache.maven.wagon</groupId>
-             	<artifactId>wagon-webdav-jackrabbit</artifactId>
-             	<version>1.0-beta-7</version>
-             </extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-webdav-jackrabbit</artifactId>
+				<version>1.0-beta-7</version>
+			</extension>
 		</extensions>
 	</build>
-	
+
 	<repositories>
-	    <repository>
-	      <id>central</id>
-	      <url>http://repo1.maven.org/maven2/</url>
-	    </repository>
 		<repository>
-	      <id>wiquery</id>
-	      <url>http://code.google.com/p/wiquery/source/browse/repo</url>
-	    </repository>
+			<id>central</id>
+			<url>http://repo1.maven.org/maven2/</url>
+		</repository>
+		<repository>
+			<id>wiquery</id>
+			<url>http://code.google.com/p/wiquery/source/browse/repo</url>
+		</repository>
 	</repositories>
 
 	<dependencies>
-
 		<!-- Logging -->
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>0.9.29</version>
+			<version>1.0.0</version>
 			<scope>test</scope>
 		</dependency>
 		<!-- Slf4j -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.6.2</version>
+			<version>1.6.4</version>
 		</dependency>
 
 		<!-- Wicket -->
@@ -216,7 +216,7 @@ With jQuery Stream, you can easily develop event-driven web application.
 			<version>3.0.20100224</version>
 			<scope>provided</scope>
 		</dependency>
-		
+
 		<!-- Jetty -->
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
@@ -236,13 +236,11 @@ With jQuery Stream, you can easily develop event-driven web application.
 			<version>${jetty.version}</version>
 			<scope>test</scope>
 		</dependency>
-
 	</dependencies>
-
 
 	<properties>
 		<jetty.version>8.0.1.v20110908</jetty.version>
-		<wicket.version>1.5.3</wicket.version>
+		<wicket.version>1.5.4</wicket.version>
 		<wiquery.version>1.5.3</wiquery.version>
 	</properties>
 </project>
