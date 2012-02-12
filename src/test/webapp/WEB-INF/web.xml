@@ -7,7 +7,7 @@
 	
 	<servlet>
 		<servlet-name>streamservlet</servlet-name>
-		<servlet-class>nl.topicuszorg.wicket.jquerystream.servlet.StreamServlet</servlet-class>
+		<servlet-class>nl.topicuszorg.wicket.jquerysocket.servlet.StreamServlet</servlet-class>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
 
@@ -16,7 +16,7 @@
 		<filter-class>org.apache.wicket.protocol.http.WicketFilter</filter-class>
 		<init-param>
 			<param-name>applicationClassName</param-name>
-			<param-value>nl.topicuszorg.wicket.jquerystream.web.TestApplication</param-value>
+			<param-value>nl.topicuszorg.wicket.jquerysocket.web.TestApplication</param-value>
 		</init-param>
 	</filter>
 	
