@@ -107,12 +107,13 @@ public abstract class JQuerySocketBehavior extends WiQueryAbstractAjaxBehavior
 	}
 
 	/**
-	 * Make a callback to this behaviour, only use of you need to make an callback from a thread where no application is avaible
+	 * Make a callback to this behaviour, only use of you need to make an callback from a thread where no application is
+	 * avaible
 	 * 
 	 */
 	public void callbackBehavior()
 	{
-		JQueryStreamService.sendMessage(clientid, callBack.toString());
+		JQuerySocketService.sendMessage(clientid, callBack.toString());
 	}
 
 	/**
