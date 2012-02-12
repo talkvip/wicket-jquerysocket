@@ -1,19 +1,15 @@
-$.socket("${url}", {
-        dataType: "json",
-        type:"http",
-        message: function(event) {
-                try {
-                	streamLog(event.data.javascript, "debug");
-                	
-                	eval(event.data.javascript);
-                } catch(ex) {
-                	streamLog(event.data.javascript, "debug");
-                }
-        },
-        openData: {
-            type: "json",
-            clientid: "${clientid}"
-        }
+var socket = $.socket("${url}", {
+    transport: "stream",
+    id: function() { return"${clientid}" }
+});
+
+socket.on("message", function(data){
+	try {
+    	streamLog(data, "debug");
+    	eval(data);
+    } catch(ex) {
+    	streamLog(data, "debug");
+    }
 });
 
 function streamLog(s, t) {

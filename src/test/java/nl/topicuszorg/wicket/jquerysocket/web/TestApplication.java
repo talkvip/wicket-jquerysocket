@@ -1,7 +1,10 @@
 package nl.topicuszorg.wicket.jquerysocket.web;
 
 import org.apache.wicket.Page;
+import org.apache.wicket.markup.html.IHeaderResponse;
+import org.apache.wicket.markup.html.IHeaderResponseDecorator;
 import org.apache.wicket.protocol.http.WebApplication;
+import org.odlabs.wiquery.core.WiQueryDecoratingHeaderResponse;
 import org.odlabs.wiquery.core.WiQueryInitializer;
 import org.odlabs.wiquery.core.WiQuerySettings;
 
@@ -19,8 +22,18 @@ public class TestApplication extends WebApplication
 		super.init();
 
 		WiQuerySettings settings = new WiQuerySettings();
-		settings.setEnableWiqueryResourceManagement(false);
+		settings.setAutoImportJQueryResource(false);
 		setMetaData(WiQueryInitializer.WIQUERY_INSTANCE_KEY, settings);
+
+		setHeaderResponseDecorator(new IHeaderResponseDecorator()
+		{
+			/** */
+			@Override
+			public IHeaderResponse decorate(IHeaderResponse response)
+			{
+				return new WiQueryDecoratingHeaderResponse(response);
+			}
+		});
 	}
 
 	/**

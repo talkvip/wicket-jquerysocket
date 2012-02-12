@@ -35,7 +35,8 @@ public final class JQuerySocketService
 	protected static void sendMessage(String clientid, String javascript)
 	{
 		JSONObject json = new JSONObject();
-		json.put("javascript", javascript);
+		json.put("type", "message");
+		json.put("data", javascript);
 
 		getDestination().sendMessage(clientid, json);
 	}
@@ -62,6 +63,7 @@ public final class JQuerySocketService
 
 	/**
 	 * set the destination
+	 * 
 	 * @param nwDestination
 	 */
 	protected static void setDestination(IStreamMessageDestination nwDestination)

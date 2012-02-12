@@ -6,12 +6,16 @@ package nl.topicuszorg.wicket.jquerysocket.servlet;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -23,9 +27,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import net.sf.json.JSON;
+import net.sf.json.JSONObject;
 import nl.topicuszorg.wicket.jquerysocket.DisconnectEventListener;
 import nl.topicuszorg.wicket.jquerysocket.IStreamMessageDestination;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,6 +47,10 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 {
 	/** */
 	private static final long serialVersionUID = 1L;
+
+	/** Allowed transports */
+	private static final List<String> ALLOWED_TRANSPORTS = Arrays.asList("streamiframe", "streamxdr", "streamxhr",
+		"sse");
 
 	/** Default logger */
 	private static final Logger LOG = LoggerFactory.getLogger(StreamServlet.class);
@@ -61,6 +71,9 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	 * Messages to send
 	 */
 	private final BlockingQueue<Message> messages = new LinkedBlockingQueue<Message>();
+
+	/** Message id counter */
+	private final AtomicInteger messageId = new AtomicInteger();
 
 	/**
 	 * Notifier thread
@@ -190,11 +203,15 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	 */
 	private void sendMessage(PrintWriter writer, String message) throws IOException
 	{
-		// default message format is message-size ; message-data ;
-		writer.print(message.length());
-		writer.print(";");
-		writer.print(message);
-		writer.print(";");
+		System.out.println(message);
+		for (String datum : message.split("\r\n|\r|\n"))
+		{
+			writer.print("data: ");
+			writer.print(datum);
+			writer.print("\n");
+		}
+
+		writer.print("\n");
 		writer.flush();
 	}
 
@@ -212,6 +229,34 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	}
 
 	/**
+	 * @see javax.servlet.http.HttpServlet#doPost(javax.servlet.http.HttpServletRequest,
+	 *      javax.servlet.http.HttpServletResponse)
+	 */
+	@Override
+	protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException,
+		IOException
+	{
+		response.setHeader("Access-Control-Allow-Origin", "*");
+
+		JSONObject json = JSONObject.fromObject(request.getParameter("data"));
+		LOG.info(json.toString());
+
+		String clientid = json.getString("socket");
+
+		if ("heartbeat".equals(json.getString("type")))
+		{
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put("id", messageId.addAndGet(1));
+			map.put("type", "heartbeat");
+
+			Message message = new Message();
+			message.setClientId(clientid);
+			message.setJson(JSONObject.fromObject(map));
+			messages.add(message);
+		}
+	}
+
+	/**
 	 * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest,
 	 *      javax.servlet.http.HttpServletResponse)
 	 */
@@ -226,69 +271,76 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 		// Access-Control-Allow-Origin header
 		response.setHeader("Access-Control-Allow-Origin", "*");
 
-		String clientid = request.getParameter("clientid");
-		LOG.debug("Get request for client " + clientid);
-
-		PrintWriter writer = response.getWriter();
-
-		// Id
-		final String id = clientid;
-		writer.print(id);
-		writer.print(';');
-
-		// Padding
-		for (int i = 0; i < 1024; i++)
+		// Transport type
+		if (!ALLOWED_TRANSPORTS.contains(request.getParameter("transport")))
 		{
-			writer.print(' ');
+			// Unknown transport -> bad request
+			response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+				String.format("Transport %s not supported", request.getParameter("transport")));
 		}
-		writer.print(';');
-		writer.flush();
-
-		if (request.isAsyncSupported())
+		else
 		{
-			final AsyncContext ac = request.startAsync();
-			ac.addListener(new AsyncListener()
+			final String clientid = request.getParameter("id");
+			LOG.debug("Get request for client " + clientid);
+
+			if (request.isAsyncSupported())
 			{
-				/**
-				 * @see javax.servlet.AsyncListener#onComplete(javax.servlet.AsyncEvent)
-				 */
-				@Override
-				public void onComplete(AsyncEvent event) throws IOException
+				final AsyncContext ac = request.startAsync();
+
+				if (StringUtils.isNotBlank(request.getParameter("heartbeat")))
 				{
-					LOG.debug("client " + id + " completed");
-					asyncContexts.remove(id);
+					ac.setTimeout(0L);
 				}
 
-				/**
-				 * @see javax.servlet.AsyncListener#onTimeout(javax.servlet.AsyncEvent)
-				 */
-				@Override
-				public void onTimeout(AsyncEvent event) throws IOException
-				{
-					LOG.debug("client " + id + " timed out");
-					asyncContexts.remove(id);
-				}
+				PrintWriter writer = response.getWriter();
+				writer.print(Arrays.toString(new float[400]).replaceAll(".", " ") + "\n");
+				writer.flush();
 
-				/**
-				 * @see javax.servlet.AsyncListener#onError(javax.servlet.AsyncEvent)
-				 */
-				@Override
-				public void onError(AsyncEvent event) throws IOException
+				ac.addListener(new AsyncListener()
 				{
-					LOG.debug("client " + id + " got an error");
-					asyncContexts.remove(id);
-				}
+					/**
+					 * @see javax.servlet.AsyncListener#onComplete(javax.servlet.AsyncEvent)
+					 */
+					@Override
+					public void onComplete(AsyncEvent event) throws IOException
+					{
+						LOG.debug("client " + clientid + " completed");
+						asyncContexts.remove(clientid);
+					}
 
-				/**
-				 * @see javax.servlet.AsyncListener#onStartAsync(javax.servlet.AsyncEvent)
-				 */
-				@Override
-				public void onStartAsync(AsyncEvent event) throws IOException
-				{
+					/**
+					 * @see javax.servlet.AsyncListener#onTimeout(javax.servlet.AsyncEvent)
+					 */
+					@Override
+					public void onTimeout(AsyncEvent event) throws IOException
+					{
+						LOG.debug("client " + clientid + " timed out");
+						asyncContexts.remove(clientid);
+					}
 
-				}
-			});
-			asyncContexts.put(id, ac);
+					/**
+					 * @see javax.servlet.AsyncListener#onError(javax.servlet.AsyncEvent)
+					 */
+					@Override
+					public void onError(AsyncEvent event) throws IOException
+					{
+						LOG.debug("client " + clientid + " got an error");
+						asyncContexts.remove(clientid);
+					}
+
+					/**
+					 * @see javax.servlet.AsyncListener#onStartAsync(javax.servlet.AsyncEvent)
+					 */
+					@Override
+					public void onStartAsync(AsyncEvent event) throws IOException
+					{
+
+					}
+				});
+				asyncContexts.put(clientid, ac);
+
+				sendMessage(ac.getResponse().getWriter(), "open");
+			}
 		}
 	}
 

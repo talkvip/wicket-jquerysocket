@@ -49,7 +49,6 @@ import org.slf4j.LoggerFactory;
  * 
  * @author Sven Rienstra
  * @author Dries schulten
- * 
  */
 public abstract class JQuerySocketBehavior extends WiQueryAbstractAjaxBehavior
 {
