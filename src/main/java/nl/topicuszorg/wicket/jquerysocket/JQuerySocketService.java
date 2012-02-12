@@ -61,6 +61,15 @@ public final class JQuerySocketService
 	}
 
 	/**
+	 * set the destination
+	 * @param nwDestination
+	 */
+	protected static void setDestination(IStreamMessageDestination nwDestination)
+	{
+		destination = nwDestination;
+	}
+
+	/**
 	 * Find destination
 	 * 
 	 * @return
@@ -70,6 +79,11 @@ public final class JQuerySocketService
 		// At this moment our only implementation of a destination is the servlet
 		if (destination == null)
 		{
+			if (!WebApplication.exists())
+			{
+				throw new IllegalStateException("No application bound to thread and Stream servlet not yet set");
+			}
+
 			destination = (IStreamMessageDestination) WebApplication.get().getServletContext()
 				.getAttribute(StreamServlet.STREAM_SERVLET_ATTRIBUTE);
 			if (destination == null)

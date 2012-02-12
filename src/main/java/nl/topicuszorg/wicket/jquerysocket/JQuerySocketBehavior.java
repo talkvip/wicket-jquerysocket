@@ -107,12 +107,19 @@ public abstract class JQuerySocketBehavior extends WiQueryAbstractAjaxBehavior
 	}
 
 	/**
+	 * Make a callback to this behaviour, only use of you need to make an callback from a thread where no application is avaible
+	 * 
+	 */
+	public void callbackBehavior()
+	{
+		JQueryStreamService.sendMessage(clientid, callBack.toString());
+	}
+
+	/**
 	 * Push JavaScript to client
 	 * 
 	 * @param javaScript
-	 * @deprecated use wicket event system
 	 */
-	@Deprecated
 	public void pushJavaScript(CharSequence javaScript)
 	{
 		JQuerySocketService.sendMessage(clientid, javaScript.toString());
