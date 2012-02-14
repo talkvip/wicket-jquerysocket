@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -71,9 +70,6 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	 * Messages to send
 	 */
 	private final BlockingQueue<Message> messages = new LinkedBlockingQueue<Message>();
-
-	/** Message id counter */
-	private final AtomicInteger messageId = new AtomicInteger();
 
 	/**
 	 * Notifier thread
@@ -203,13 +199,8 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	 */
 	private void sendMessage(PrintWriter writer, String message) throws IOException
 	{
-		for (String datum : message.split("\r\n|\r|\n"))
-		{
-			writer.print("data: ");
-			writer.print(datum);
-			writer.print("\n");
-		}
-
+		writer.print("data: ");
+		writer.print(message);
 		writer.print("\n");
 		writer.flush();
 	}
@@ -263,7 +254,6 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 			if ("heartbeat".equals(json.getString("type")))
 			{
 				Map<String, Object> map = new HashMap<String, Object>();
-				map.put("id", messageId.addAndGet(1));
 				map.put("type", "heartbeat");
 
 				Message message = new Message();

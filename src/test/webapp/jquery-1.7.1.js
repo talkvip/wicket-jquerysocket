@@ -562,7 +562,6 @@ jQuery.extend({
 
 		// Attempt to parse using the native JSON parser first
 		if ( window.JSON && window.JSON.parse ) {
-			console.log('<' + data + '>');
 			return window.JSON.parse( data );
 		}
 
