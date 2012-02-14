@@ -203,7 +203,6 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	 */
 	private void sendMessage(PrintWriter writer, String message) throws IOException
 	{
-		System.out.println(message);
 		for (String datum : message.split("\r\n|\r|\n"))
 		{
 			writer.print("data: ");
@@ -213,6 +212,24 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 
 		writer.print("\n");
 		writer.flush();
+	}
+
+	/**
+	 * Send status message
+	 * 
+	 * @param writer
+	 * @param clientid
+	 * @param status
+	 * @throws IOException
+	 */
+	private void sendStatus(PrintWriter writer, String clientid, String status) throws IOException
+	{
+		JSONObject json = new JSONObject();
+
+		json.put("socket", clientid);
+		json.put("type", status);
+
+		sendMessage(writer, json.toString());
 	}
 
 	/**
@@ -238,21 +255,22 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	{
 		response.setHeader("Access-Control-Allow-Origin", "*");
 
-		JSONObject json = JSONObject.fromObject(request.getParameter("data"));
-		LOG.info(json.toString());
-
-		String clientid = json.getString("socket");
-
-		if ("heartbeat".equals(json.getString("type")))
+		if (StringUtils.isNotBlank(request.getParameter("data")))
 		{
-			Map<String, Object> map = new HashMap<String, Object>();
-			map.put("id", messageId.addAndGet(1));
-			map.put("type", "heartbeat");
+			JSONObject json = JSONObject.fromObject(request.getParameter("data"));
+			String clientid = json.getString("socket");
 
-			Message message = new Message();
-			message.setClientId(clientid);
-			message.setJson(JSONObject.fromObject(map));
-			messages.add(message);
+			if ("heartbeat".equals(json.getString("type")))
+			{
+				Map<String, Object> map = new HashMap<String, Object>();
+				map.put("id", messageId.addAndGet(1));
+				map.put("type", "heartbeat");
+
+				Message message = new Message();
+				message.setClientId(clientid);
+				message.setJson(JSONObject.fromObject(map));
+				messages.add(message);
+			}
 		}
 	}
 
@@ -305,7 +323,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					public void onComplete(AsyncEvent event) throws IOException
 					{
 						LOG.debug("client " + clientid + " completed");
-						asyncContexts.remove(clientid);
+						disconnect();
 					}
 
 					/**
@@ -315,7 +333,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					public void onTimeout(AsyncEvent event) throws IOException
 					{
 						LOG.debug("client " + clientid + " timed out");
-						asyncContexts.remove(clientid);
+						disconnect();
 					}
 
 					/**
@@ -325,7 +343,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					public void onError(AsyncEvent event) throws IOException
 					{
 						LOG.debug("client " + clientid + " got an error");
-						asyncContexts.remove(clientid);
+						disconnect();
 					}
 
 					/**
@@ -336,10 +354,21 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					{
 
 					}
+
+					/**
+					 * Do disconnect and cleanup
+					 * 
+					 * @throws IOException
+					 */
+					private void disconnect() throws IOException
+					{
+						sendStatus(ac.getResponse().getWriter(), clientid, "close");
+						asyncContexts.remove(clientid);
+					}
 				});
 				asyncContexts.put(clientid, ac);
 
-				sendMessage(ac.getResponse().getWriter(), "open");
+				sendStatus(ac.getResponse().getWriter(), clientid, "open");
 			}
 		}
 	}
