@@ -153,6 +153,8 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 			{
 				try
 				{
+					LOG.debug("Disconnect thread working");
+
 					Iterator<String> keyIterator = disconnectListeners.keySet().iterator();
 					while (keyIterator.hasNext())
 					{
@@ -161,7 +163,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 						{
 							Date timeAdded = disconnectListenerDate.get(clientId);
 							// The client needs some time to connect
-							if ((new Date().getTime() - timeAdded.getTime()) < (30 * 1000))
+							if ((new Date().getTime() - timeAdded.getTime()) < (TimeUnit.SECONDS.toMillis(30)))
 							{
 								LOG.debug("client " + clientId + " disconnected");
 								disconnectListeners.get(clientId).onDisconnect();
@@ -170,7 +172,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 							}
 						}
 					}
-					Thread.sleep(60 * 1000);
+					Thread.sleep(TimeUnit.SECONDS.toMillis(60));
 				}
 				catch (InterruptedException e)
 				{
