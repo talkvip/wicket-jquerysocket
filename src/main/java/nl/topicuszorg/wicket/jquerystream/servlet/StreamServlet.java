@@ -103,16 +103,10 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 							LOG.debug("Send message to " + message.getClientId());
 							send(asyncContext, message.getJson());
 						}
-						else if (disconnectListeners.containsKey(message.getClientId()))
-						{
-							LOG.debug("No context found for client " + message.getClientId() + " removing listener");
-							disconnectListeners.get(message.getClientId()).onDisconnect();
-							disconnectListeners.remove(message.getClientId());
-						}
 						else if (message.getResendCount() < MAX_RESEND_COUNT)
 						{
 							// Try to resend the message, maybe the client hasn't connected yet
-							LOG.info("Trying to resend message to client " + message.getClientId()
+							LOG.debug("Trying to resend message to client " + message.getClientId()
 								+ " in 250 milliseconds, resend count #" + message.getResendCount() + 1);
 							message.setTime(now() + TimeUnit.MILLISECONDS.toNanos(250));
 							message.resend();
@@ -166,7 +160,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 						if (!asyncContexts.containsKey(clientId))
 						{
 							Date timeAdded = disconnectListenerDate.get(clientId);
-							// De client wel de tijd gunnen om te connecten
+							// The client needs some time to connect
 							if ((new Date().getTime() - timeAdded.getTime()) < (30 * 1000))
 							{
 								LOG.debug("client " + clientId + " disconnected");
