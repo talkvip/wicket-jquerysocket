@@ -9,9 +9,10 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -48,6 +49,9 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	/** Stream servlet attribute */
 	public static final String STREAM_SERVLET_ATTRIBUTE = "streamservlet";
 
+	/** Maximum resend count */
+	private static final int MAX_RESEND_COUNT = 5;
+
 	/** Async contexts */
 	private final Map<String, AsyncContext> asyncContexts = new ConcurrentHashMap<String, AsyncContext>();
 
@@ -60,7 +64,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	/**
 	 * Messages to send
 	 */
-	private final BlockingQueue<Message> messages = new LinkedBlockingQueue<Message>();
+	private final DelayQueue<Message> messages = new DelayQueue<Message>();
 
 	/**
 	 * Notifier thread
@@ -105,6 +109,16 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 							disconnectListeners.get(message.getClientId()).onDisconnect();
 							disconnectListeners.remove(message.getClientId());
 						}
+						else if (message.getResendCount() < MAX_RESEND_COUNT)
+						{
+							// Try to resend the message, maybe the client hasn't connected yet
+							LOG.info("Trying to resend message to client " + message.getClientId()
+								+ " in 250 milliseconds, resend count #" + message.getResendCount() + 1);
+							message.setTime(now() + TimeUnit.MILLISECONDS.toNanos(250));
+							message.resend();
+							messages.add(message);
+						}
+
 					}
 				}
 				catch (InterruptedException e)
@@ -312,6 +326,12 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	{
 		LOG.debug("Push message to client " + clientid + ": " + json.toString());
 
+		if (!asyncContexts.containsKey(clientid))
+		{
+			LOG.warn("Trying to send message to specific client, but there's no client connected with clientid "
+				+ clientid);
+		}
+
 		Message message = new Message();
 		message.setClientId(clientid);
 		message.setJson(json);
@@ -338,7 +358,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	 * @author sven
 	 * 
 	 */
-	private class Message implements Serializable
+	private class Message implements Serializable, Delayed
 	{
 		/** */
 		private static final long serialVersionUID = 1L;
@@ -348,6 +368,12 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 
 		/** Client id */
 		private String clientId;
+
+		/** The time the message has to be send in nanoTime units */
+		private Long time;
+
+		/** The number of times the message has been tried to resend */
+		private int resendCount;
 
 		/**
 		 * @return the json
@@ -381,6 +407,58 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 		public void setClientId(String clientId)
 		{
 			this.clientId = clientId;
+		}
+
+		/**
+		 * @see java.util.concurrent.Delayed#getDelay(java.util.concurrent.TimeUnit)
+		 */
+		@Override
+		public long getDelay(TimeUnit unit)
+		{
+			if (time == null)
+			{
+				return 0;
+			}
+			return unit.convert(time - now(), TimeUnit.NANOSECONDS);
+
+		}
+
+		/**
+		 * @see java.lang.Comparable#compareTo(java.lang.Object)
+		 */
+		@Override
+		public int compareTo(Delayed other)
+		{
+			if (other == this) // compare zero ONLY if same object
+				return 0;
+			long d = (getDelay(TimeUnit.NANOSECONDS) - other.getDelay(TimeUnit.NANOSECONDS));
+			return (d == 0) ? 0 : ((d < 0) ? -1 : 1);
+		}
+
+		/**
+		 * Set time
+		 * 
+		 * @param nanos
+		 */
+		public void setTime(long nanos)
+		{
+			time = nanos;
+		}
+
+		/**
+		 * Up the resend counter
+		 */
+		public void resend()
+		{
+			resendCount++;
+		}
+
+		/**
+		 * @return the resendCount
+		 */
+		public int getResendCount()
+		{
+			return resendCount;
 		}
 
 		/**
@@ -454,4 +532,13 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 			return StreamServlet.this;
 		}
 	}
+
+	/**
+	 * Returns current nanosecond time.
+	 */
+	final long now()
+	{
+		return System.nanoTime();
+	}
+
 }
