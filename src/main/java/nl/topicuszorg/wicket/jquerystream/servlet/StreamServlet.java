@@ -107,7 +107,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 						{
 							// Try to resend the message, maybe the client hasn't connected yet
 							LOG.debug("Trying to resend message to client " + message.getClientId()
-								+ " in 250 milliseconds, resend count #" + message.getResendCount() + 1);
+								+ " in 250 milliseconds, resend count #" + (message.getResendCount() + 1));
 							message.setTime(now() + TimeUnit.MILLISECONDS.toNanos(250));
 							message.resend();
 							messages.add(message);
