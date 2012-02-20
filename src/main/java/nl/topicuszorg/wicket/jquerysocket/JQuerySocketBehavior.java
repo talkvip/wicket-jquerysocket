@@ -13,13 +13,12 @@ import nl.topicuszorg.wicket.jquerysocket.servlet.StreamServlet;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.wicket.Component;
+import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.event.IEvent;
 import org.apache.wicket.markup.html.IHeaderResponse;
 import org.apache.wicket.util.collections.MiniMap;
 import org.apache.wicket.util.template.PackageTextTemplate;
-import org.odlabs.wiquery.core.behavior.WiQueryAbstractAjaxBehavior;
-import org.odlabs.wiquery.core.javascript.JsStatement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +49,7 @@ import org.slf4j.LoggerFactory;
  * @author Sven Rienstra
  * @author Dries schulten
  */
-public abstract class JQuerySocketBehavior extends WiQueryAbstractAjaxBehavior
+public abstract class JQuerySocketBehavior extends AbstractDefaultAjaxBehavior
 {
 	/** */
 	private static final long serialVersionUID = 1L;
@@ -126,21 +125,6 @@ public abstract class JQuerySocketBehavior extends WiQueryAbstractAjaxBehavior
 	}
 
 	/**
-	 * @see org.odlabs.wiquery.core.behavior.WiQueryAbstractAjaxBehavior#statement()
-	 */
-	@Override
-	public JsStatement statement()
-	{
-		Map<String, Object> vars = new MiniMap<String, Object>(3);
-		vars.put("clientid", clientid);
-		vars.put("url", JQuerySocketService.getServletUrl());
-		vars.put("debug", LOG.isDebugEnabled());
-
-		return new JsStatement().append(new PackageTextTemplate(JQuerySocketBehavior.class,
-			"js/JQuerySocketBehavior.js").asString(vars));
-	}
-
-	/**
 	 * @see org.apache.wicket.ajax.AbstractDefaultAjaxBehavior#renderHead(org.apache.wicket.Component,
 	 *      org.apache.wicket.markup.html.IHeaderResponse)
 	 */
@@ -148,6 +132,15 @@ public abstract class JQuerySocketBehavior extends WiQueryAbstractAjaxBehavior
 	public void renderHead(Component component, IHeaderResponse response)
 	{
 		response.renderJavaScriptReference(SocketResourceReference.get());
+
+		Map<String, Object> vars = new MiniMap<String, Object>(3);
+		vars.put("clientid", clientid);
+		vars.put("url", JQuerySocketService.getServletUrl());
+		vars.put("debug", LOG.isDebugEnabled());
+
+		response.renderJavaScript(new PackageTextTemplate(JQuerySocketBehavior.class,
+			"js/JQuerySocketBehavior.js").asString(vars), "jqs-" + clientid);
+
 		super.renderHead(component, response);
 	}
 

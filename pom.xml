@@ -192,13 +192,6 @@ With jQuery Stream, you can easily develop event-driven web application.
 			<classifier>jdk15</classifier>
 		</dependency>
 
-		<!-- Wiquery -->
-		<dependency>
-			<groupId>org.odlabs.wiquery</groupId>
-			<artifactId>wiquery-core</artifactId>
-			<version>${wiquery.version}</version>
-		</dependency>
-
 		<!-- servlet -->
 		<dependency>
 			<groupId>org.mortbay.jetty</groupId>
@@ -229,8 +222,7 @@ With jQuery Stream, you can easily develop event-driven web application.
 	</dependencies>
 
 	<properties>
-		<jetty.version>8.1.0.v20120127</jetty.version>
+		<jetty.version>8.1.1.v20120215</jetty.version>
 		<wicket.version>1.5.4</wicket.version>
-		<wiquery.version>1.5.3</wiquery.version>
 	</properties>
 </project>
