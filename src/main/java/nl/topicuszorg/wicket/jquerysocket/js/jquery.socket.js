@@ -99,16 +99,14 @@
  */
 (function($, undefined) {
 	
-	var // Socket events
-		socketEvents = ["connecting", "open", "message", "close", "waiting"],
-		// Sockets
-		sockets = {},
-		// Default options
+	var // Default options
 		defaults,
 		// Transports
 		transports,
-		// UUID
-		uuid = $.now();
+		// Socket instances
+		sockets = {},
+		// A global identifier
+		guid = $.now();
 	
 	// TODO reimplement
 	function callbacks(flags) {
@@ -151,6 +149,7 @@
 				var i, ret, answer = null;
 				
 				if (!flags) {
+					args = args || [];
 					for (i = 0; i < list.length; i++) {
 						ret = list[i].apply(context, args);
 						if (ret !== undefined) {
@@ -306,24 +305,24 @@
 						return this;
 					}
 					
-					var events = isBinary(data) ? [{type: "message", data: data}] : $.makeArray(opts.inbound.call(self, data)),
-						i, event;
+					var events = isBinary(data) ? [{type: "message", data: data}] : $.makeArray(opts.inbound.call(self, data));
 					
-					for (i = 0; i < events.length; i++) {
-						event = events[i];
+					$.each(events, function(i, event) {
 						connection.result = null;
 						self.fire(event.type, [event.data]);
 						
 						if (event.reply) {
-							self.send("reply", {id: "" + event.id, data: connection.result});
+							$.when(connection.result).done(function(result) {
+								self.send("reply", {id: "" + event.id, data: result});
+							});
 						}
-					}
+					});
 					
 					return this;
 				},
 				// Establishes a connection
 				open: function() {
-					var candidates = $.makeArray(opts.transport),
+					var candidates = $.makeArray(opts.transports),
 						type;
 					
 					// Cancels the scheduled connection
@@ -416,7 +415,7 @@
 				// Finds a sub socket communicating with this socket
 				find: function(name) {
 					return $.socket(url + "/" + name, {
-						transport: "sub", 
+						transports: "sub", 
 						event: name, 
 						source: url,
 						timeout: false,
@@ -439,7 +438,7 @@
 			// port
 			(parts[3] || (parts[1] === "http:" ? 80 : 443)) != (location.port || (location.protocol === "http:" ? 80 : 443))));
 		
-		$.each(socketEvents, function(i, type) {
+		$.each(["connecting", "open", "message", "close", "waiting"], function(i, type) {
 			// Creates event helper
 			events[type] = callbacks(type === "message" ? "" : "once memory");
 			events[type].order = i;
@@ -559,13 +558,11 @@
 		return self.open();
 	}
 	
-	if (/android/.test(navigator.userAgent.toLowerCase())) {
-		$.browser.android = true;
-	}
+	$.browser.android = /android/.test(navigator.userAgent.toLowerCase());
 	
 	// Default options
 	defaults = {
-		transport: ["ws", "sse", "stream", "longpoll"],
+		transports: ["ws", "sse", "stream", "longpoll"],
 		timeout: 5000,
 		heartbeat: 20000,
 		_heartbeat: 5000,
@@ -734,7 +731,7 @@
 			
 			// The Content-Type is not application/x-www-form-urlencoded but text/plain on account of XDomainRequest
 			// See the fourth at http://blogs.msdn.com/b/ieinternals/archive/2010/05/13/xdomainrequest-restrictions-limitations-and-workarounds.aspx
-			send = !options.crossDomain || (options.crossDomain && $.support.cors) ? 
+			send = !options.crossDomain || $.support.cors ? 
 			function(url, data) {
 				$.ajax(url, {type: "POST", contentType: "text/plain", data: "data=" + data, async: true, timeout: 0}).always(post);
 			} : window.XDomainRequest && options.xdrURL && (options.xdrURL.call(socket, "") !== false) ? 
@@ -747,7 +744,7 @@
 			} : 
 			function(url, data) {
 				var $form = $("<form method='POST' enctype='text/plain' />"),
-					$iframe = $("<iframe name='socket-" + (++uuid) + "'/>");
+					$iframe = $("<iframe name='socket-" + (++guid) + "'/>");
 				
 				$form.attr({action: url, target: $iframe.attr("name")}).hide().appendTo("body")
 				.append($("<textarea name='data' />").val(data))
@@ -984,26 +981,25 @@
 			}
 			
 			function poll() {
-				count++;
-				var u = url + queryOrAmpersand(url) + $.param({count: count});
-				socket.data("url", u);
-				
-				xhr = $.ajax(u, {type: "GET", dataType: "text", async: true, cache: true, timeout: 0})
-				.done(function(data) {
-					if (data) {
-						if (count === 1) {
-							socket.fire("open");
+				var u = url + queryOrAmpersand(url) + $.param({count: ++count}),
+					done = function(data) {
+						if (data) {
+							if (count === 1) {
+								socket.fire("open");
+							} else {
+								socket.notify(data);
+							}
+							poll();
 						} else {
-							socket.notify(data);
+							socket.fire("close", ["done"]);
 						}
-						poll();
-					} else {
-						socket.fire("close", ["done"]);
-					}
-				})
-				.fail(function(jqXHR, reason) {
-					socket.fire("close", [reason === "abort" ? "close" : "error"]);
-				});
+					},
+					fail = function(jqXHR, reason) {
+						socket.fire("close", [reason === "abort" ? "close" : "error"]);
+					};
+				
+				socket.data("url", u);
+				xhr = $.ajax(u, {type: "GET", dataType: "text", async: true, cache: true, timeout: 0}).then(done, fail);
 			}
 			
 			return $.extend(transports.http(socket, options), {
@@ -1023,27 +1019,28 @@
 			}
 			
 			function poll() {
-				count++;
-				var u = options.xdrURL.call(socket, url + queryOrAmpersand(url) + $.param({count: count}));
-				socket.data("url", u);
+				var u = options.xdrURL.call(socket, url + queryOrAmpersand(url) + $.param({count: ++count})),
+					done = function() {
+						if (xdr.responseText) {
+							if (count === 1) {
+								socket.fire("open");
+							} else {
+								socket.notify(xdr.responseText);
+							}
+							poll();
+						} else {
+							socket.fire("close", ["done"]);
+						}
+					},
+					fail = function() {
+						socket.fire("close", ["error"]);
+					};
 				
 				xdr = new XDomainRequest();
-				xdr.onload = function() {
-					if (xdr.responseText) {
-						if (count === 1) {
-							socket.fire("open");
-						} else {
-							socket.notify(xdr.responseText);
-						}
-						poll();
-					} else {
-						socket.fire("close", ["done"]);
-					}
-				};
-				xdr.onerror = function() {
-					socket.fire("close", ["error"]);
-				};
+				xdr.onload = done;
+				xdr.onerror = fail;
 				
+				socket.data("url", u);
 				xdr.open("GET", u);
 				xdr.send();
 			}
@@ -1057,7 +1054,7 @@
 		},
 		// Long polling - JSONP
 		longpolljsonp: function(socket, options) {
-			var count = 0, url = socket.data("url"), callback = "socket_" + (++uuid),
+			var count = 0, url = socket.data("url"), callback = "socket_" + (++guid),
 				xhr, called;
 			
 			// Attaches callback
@@ -1075,22 +1072,21 @@
 			});
 			
 			function poll() {
-				count++;
-				var u = url + queryOrAmpersand(url) + $.param({callback: callback, count: count});
-				socket.data("url", u);
+				var u = url + queryOrAmpersand(url) + $.param({callback: callback, count: ++count}),
+					done = function() {
+						if (called) {
+							called = false;
+							poll();
+						} else {
+							socket.fire("close", ["done"]);
+						}
+					},
+					fail = function(jqXHR, reason) {
+						socket.fire("close", [reason === "abort" ? "close" : "error"]);
+					};
 				
-				xhr = $.ajax(u, {dataType: "script", crossDomain: true, cache: true, timeout: 0})
-				.done(function() {
-					if (called) {
-						called = false;
-						poll();
-					} else {
-						socket.fire("close", ["done"]);
-					}
-				})
-				.fail(function(jqXHR, reason) {
-					socket.fire("close", [reason === "abort" ? "close" : "error"]);
-				});
+				socket.data("url", u);
+				xhr = $.ajax(u, {dataType: "script", crossDomain: true, cache: true, timeout: 0}).then(done, fail);
 			}
 			
 			return $.extend(transports.http(socket, options), {

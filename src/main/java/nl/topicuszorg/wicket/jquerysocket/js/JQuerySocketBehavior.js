@@ -1,5 +1,5 @@
 var socket = $.socket("${url}", {
-    transport: "stream",
+    transports: ["stream"],
     id: function() { return"${clientid}" }
 });
 
