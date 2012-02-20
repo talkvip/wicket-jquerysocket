@@ -13,8 +13,6 @@ import org.apache.wicket.event.Broadcast;
 import org.apache.wicket.markup.html.WebPage;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.model.AbstractReadOnlyModel;
-import org.odlabs.wiquery.core.javascript.JsQuery;
-import org.odlabs.wiquery.core.javascript.JsUtils;
 
 /**
  * @author schulten
@@ -115,8 +113,7 @@ public class TestPage extends WebPage
 		@Override
 		public String getJavaScript()
 		{
-			return new JsQuery().$("#pushed")
-				.chain("append", JsUtils.quotes(String.format("%s<br/>", counter.get()))).render().toString();
+			return String.format("$(\"#pushed\").append(\"%s\");", String.format("%s<br/>", counter.get()));
 		}
 
 		/**
