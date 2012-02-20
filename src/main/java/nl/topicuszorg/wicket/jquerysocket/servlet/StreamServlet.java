@@ -59,14 +59,8 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	/** Maximum resend count */
 	private static final int MAX_RESEND_COUNT = 5;
 
-	/** Async contexts */
-	private final Map<String, AsyncContext> asyncContexts = new ConcurrentHashMap<String, AsyncContext>();
-
-	/** Disconnect event listeners */
-	private final Map<String, DisconnectEventListener> disconnectListeners = new ConcurrentHashMap<String, DisconnectEventListener>();
-
-	/** For each client a timestamp of when it was last seen */
-	private final Map<String, Date> disconnectListenerDate = new ConcurrentHashMap<String, Date>();
+	/** Map of currently known connections */
+	private final Map<String, Connection> connections = new ConcurrentHashMap<String, Connection>();
 
 	/**
 	 * Messages to send
@@ -94,21 +88,41 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					// Send to all clients
 					if (message.getClientId() == null)
 					{
-						for (AsyncContext asyncContext : asyncContexts.values())
+						LOG.debug("Send message to all clients");
+						for (Connection connection : connections.values())
 						{
-							LOG.debug("Send message to all clients");
-							send(asyncContext, message.getJson());
+							try
+							{
+								sendMessage(connection.getAsyncContext().getResponse().getWriter(), message.getJson()
+									.toString());
+							}
+							catch (IOException e)
+							{
+								LOG.debug(String.format("Got an exception while sending message %s to client %s",
+									message.getJson().toString(), connection.getClientId()), e);
+								doDisconnectNoConnection(connection);
+							}
 						}
 					}
 					// Send to specific client
 					else
 					{
-						AsyncContext asyncContext = asyncContexts.get(message.getClientId());
+						Connection connection = connections.get(message.getClientId());
 
-						if (asyncContext != null)
+						if (connection != null)
 						{
-							LOG.debug("Send message to " + message.getClientId());
-							send(asyncContext, message.getJson());
+							LOG.debug("Send message to " + connection.getClientId());
+							try
+							{
+								sendMessage(connection.getAsyncContext().getResponse().getWriter(), message.getJson()
+									.toString());
+							}
+							catch (IOException e)
+							{
+								LOG.debug(String.format("Got an exception while sending message %s to client %s",
+									message.getJson().toString(), connection.getClientId()), e);
+								doDisconnectNoConnection(connection);
+							}
 						}
 						else if (message.getResendCount() < MAX_RESEND_COUNT)
 						{
@@ -128,23 +142,6 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 				}
 			}
 		}
-
-		/**
-		 * Send message
-		 */
-		private void send(AsyncContext asyncContext, JSON json)
-		{
-			try
-			{
-				sendMessage(asyncContext.getResponse().getWriter(), json.toString());
-			}
-			catch (Exception e)
-			{
-				LOG.debug("Got an exception while sending message " + json.toString(), e);
-
-				asyncContexts.values().remove(asyncContext);
-			}
-		}
 	});
 
 	/**
@@ -152,6 +149,9 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	 */
 	private final Thread disconnectThread = new Thread(new Runnable()
 	{
+		/**
+		 * @see java.lang.Runnable#run()
+		 */
 		@Override
 		public void run()
 		{
@@ -161,21 +161,18 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 				{
 					LOG.debug("Disconnect thread working");
 
-					Iterator<String> keyIterator = disconnectListeners.keySet().iterator();
-					while (keyIterator.hasNext())
+					Iterator<Connection> iterator = connections.values().iterator();
+					while (iterator.hasNext())
 					{
-						String clientId = keyIterator.next();
-						if (!asyncContexts.containsKey(clientId))
+						Connection connection = iterator.next();
+
+						// The client needs some time to connect
+						if ((new Date().getTime() - connection.getLastSeen().getTime()) > (TimeUnit.SECONDS
+							.toMillis(30)))
 						{
-							Date timeAdded = disconnectListenerDate.get(clientId);
-							// The client needs some time to connect
-							if ((new Date().getTime() - timeAdded.getTime()) < (TimeUnit.SECONDS.toMillis(30)))
-							{
-								LOG.debug("client " + clientId + " disconnected");
-								disconnectListeners.get(clientId).onDisconnect();
-								disconnectListenerDate.remove(clientId);
-								keyIterator.remove();
-							}
+							LOG.debug("client " + connection.getClientId() + " disconnected");
+							doDisconnectNoConnection(connection);
+							iterator.remove();
 						}
 					}
 					Thread.sleep(TimeUnit.SECONDS.toMillis(60));
@@ -195,6 +192,22 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	public StreamServlet()
 	{
 
+	}
+
+	/**
+	 * Handle a forced disconnect i.e. connection was no longer available while sending a message
+	 * 
+	 * @param connection
+	 *            the {@link Connection}
+	 */
+	private void doDisconnectNoConnection(Connection connection)
+	{
+		if (connection.getDisconnectEventListener() != null)
+		{
+			connection.getDisconnectEventListener().onDisconnect();
+		}
+
+		connections.remove(connection.getClientId());
 	}
 
 	/**
@@ -258,6 +271,17 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 			JSONObject json = JSONObject.fromObject(request.getParameter("data"));
 			String clientid = json.getString("socket");
 
+			Connection connection = connections.get(clientid);
+
+			if (connection == null)
+			{
+				LOG.error("No connection found for client" + clientid + " on heartbeat post");
+			}
+			else
+			{
+				connection.setLastSeen(new Date());
+			}
+
 			if ("heartbeat".equals(json.getString("type")))
 			{
 				Map<String, Object> map = new HashMap<String, Object>();
@@ -295,17 +319,20 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 		}
 		else
 		{
-			final String clientid = request.getParameter("id");
-			LOG.debug("Get request for client " + clientid);
+			final String clientId = request.getParameter("id");
+			LOG.debug("Get request for client " + clientId);
 
 			if (request.isAsyncSupported())
 			{
-				final AsyncContext ac = request.startAsync();
+				AsyncContext ac = request.startAsync();
 
-				if (StringUtils.isNotBlank(request.getParameter("heartbeat")))
-				{
-					ac.setTimeout(0L);
-				}
+				// Should be 0, but that causes a hang in Jetty on al un-connected connection acceptance threads?
+				ac.setTimeout((TimeUnit.MINUTES.toMillis(10L)));
+
+				final Connection connection = new Connection();
+				connection.setClientId(clientId);
+				connection.setAsyncContext(ac);
+				connection.setLastSeen(new Date());
 
 				PrintWriter writer = response.getWriter();
 				writer.print(Arrays.toString(new float[400]).replaceAll(".", " ") + "\n");
@@ -319,7 +346,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					@Override
 					public void onComplete(AsyncEvent event) throws IOException
 					{
-						LOG.debug("client " + clientid + " completed");
+						LOG.debug("client " + clientId + " completed");
 						disconnect();
 					}
 
@@ -329,7 +356,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					@Override
 					public void onTimeout(AsyncEvent event) throws IOException
 					{
-						LOG.debug("client " + clientid + " timed out");
+						LOG.debug("client " + clientId + " timed out");
 						disconnect();
 					}
 
@@ -339,7 +366,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					@Override
 					public void onError(AsyncEvent event) throws IOException
 					{
-						LOG.debug("client " + clientid + " got an error");
+						LOG.debug("client " + clientId + " got an error");
 						disconnect();
 					}
 
@@ -353,19 +380,19 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					}
 
 					/**
-					 * Do disconnect and cleanup
+					 * Do a normal disconnect and cleanup
 					 * 
 					 * @throws IOException
 					 */
 					private void disconnect() throws IOException
 					{
-						sendStatus(ac.getResponse().getWriter(), clientid, "close");
-						asyncContexts.remove(clientid);
+						sendStatus(connection.getAsyncContext().getResponse().getWriter(), clientId, "close");
+						doDisconnectNoConnection(connection);
 					}
 				});
-				asyncContexts.put(clientid, ac);
+				connections.put(clientId, connection);
 
-				// sendStatus(ac.getResponse().getWriter(), clientid, "open");
+				sendStatus(ac.getResponse().getWriter(), clientId, "open");
 			}
 		}
 	}
@@ -377,7 +404,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	public void destroy()
 	{
 		messages.clear();
-		asyncContexts.clear();
+		connections.clear();
 		notifier.interrupt();
 		disconnectThread.interrupt();
 	}
@@ -390,7 +417,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	{
 		LOG.debug("Push message to client " + clientid + ": " + json.toString());
 
-		if (!asyncContexts.containsKey(clientid))
+		if (!connections.containsKey(clientid))
 		{
 			LOG.warn("Trying to send message to specific client, but there's no client connected with clientid "
 				+ clientid);
@@ -412,16 +439,22 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	@Override
 	public void addDisconnectEventListener(String clientid, DisconnectEventListener eventListener)
 	{
-		disconnectListeners.put(clientid, eventListener);
-		disconnectListenerDate.put(clientid, new Date());
+		Connection connection = connections.get(clientid);
+		if (connection != null)
+		{
+			connection.setDisconnectEventListener(eventListener);
+		}
+		else
+		{
+			LOG.warn("No connection found voor client id " + clientid);
+		}
 	}
 
 	/**
-	 * Returns current nanosecond time.
+	 * @return current nanosecond time.
 	 */
-	static final long now()
+	protected static final long now()
 	{
 		return System.nanoTime();
 	}
-
 }
