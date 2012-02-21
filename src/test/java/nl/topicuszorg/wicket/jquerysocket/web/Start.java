@@ -2,7 +2,7 @@ package nl.topicuszorg.wicket.jquerysocket.web;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.bio.SocketConnector;
+import org.eclipse.jetty.server.nio.SelectChannelConnector;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -18,7 +18,7 @@ public final class Start
 	public static void main(String[] args)
 	{
 		Server server = new Server();
-		SocketConnector connector = new SocketConnector();
+		SelectChannelConnector connector = new SelectChannelConnector();
 
 		// Set some timeout options to make debugging easier.
 		connector.setMaxIdleTime(1000 * 60 * 60);

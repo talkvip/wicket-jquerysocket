@@ -1,23 +1,20 @@
 package nl.topicuszorg.wicket.jquerysocket.servlet;
 
+import java.io.IOException;
 import java.util.Date;
 
-import javax.servlet.AsyncContext;
-
+import net.sf.json.JSONObject;
 import nl.topicuszorg.wicket.jquerysocket.DisconnectEventListener;
 
 /**
- * Connection object, wraps a {@link AsyncContext} and maintains some extra information about the connection
+ * Base connection object
  * 
  * @author Dries Schulten
  */
-public class Connection
+abstract class AbstractConnection
 {
 	/** The id of the client */
 	private String clientId;
-
-	/** {@link AsyncContext} */
-	private AsyncContext asyncContext;
 
 	/** Optional {@link DisconnectEventListener} */
 	private DisconnectEventListener disconnectEventListener;
@@ -40,23 +37,6 @@ public class Connection
 	public void setClientId(String clientId)
 	{
 		this.clientId = clientId;
-	}
-
-	/**
-	 * @return the asyncContext
-	 */
-	public AsyncContext getAsyncContext()
-	{
-		return asyncContext;
-	}
-
-	/**
-	 * @param asyncContext
-	 *            the asyncContext to set
-	 */
-	public void setAsyncContext(AsyncContext asyncContext)
-	{
-		this.asyncContext = asyncContext;
 	}
 
 	/**
@@ -92,4 +72,42 @@ public class Connection
 	{
 		this.lastSeen = lastSeen;
 	}
+
+	/**
+	 * Send a jQuery socket specific status update to the client
+	 * 
+	 * @param status
+	 *            the status to send
+	 * @throws IOException
+	 */
+	public void sendStatus(String status) throws IOException
+	{
+		JSONObject json = new JSONObject();
+
+		json.put("socket", clientId);
+		json.put("type", status);
+
+		send(json.toString());
+	}
+
+	/**
+	 * Send message
+	 * 
+	 * @param message
+	 *            the {@link Message} to send
+	 * @throws IOException
+	 */
+	public void sendMessage(Message message) throws IOException
+	{
+		send(message.getJson().toString());
+	}
+
+	/**
+	 * Send 'data' to the client
+	 * 
+	 * @param data
+	 *            the data to send
+	 * @throws IOException
+	 */
+	public abstract void send(String data) throws IOException;
 }

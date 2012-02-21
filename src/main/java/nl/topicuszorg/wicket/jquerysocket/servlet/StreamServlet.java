@@ -20,7 +20,6 @@ import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -30,6 +29,8 @@ import nl.topicuszorg.wicket.jquerysocket.DisconnectEventListener;
 import nl.topicuszorg.wicket.jquerysocket.IStreamMessageDestination;
 
 import org.apache.commons.lang.StringUtils;
+import org.eclipse.jetty.websocket.WebSocket;
+import org.eclipse.jetty.websocket.WebSocketServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,12 +42,12 @@ import org.slf4j.LoggerFactory;
  * @author Dries Schulten
  * 
  */
-public class StreamServlet extends HttpServlet implements IStreamMessageDestination
+public class StreamServlet extends WebSocketServlet implements IStreamMessageDestination
 {
 	/** */
 	private static final long serialVersionUID = 1L;
 
-	/** Allowed transports */
+	/** Allowed transports (WebSocket is excluded, connects in a different way) */
 	private static final List<String> ALLOWED_TRANSPORTS = Arrays.asList("streamiframe", "streamxdr", "streamxhr",
 		"sse");
 
@@ -60,7 +61,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	private static final int MAX_RESEND_COUNT = 5;
 
 	/** Map of currently known connections */
-	private final Map<String, Connection> connections = new ConcurrentHashMap<String, Connection>();
+	private final Map<String, AbstractConnection> connections = new ConcurrentHashMap<String, AbstractConnection>();
 
 	/**
 	 * Messages to send
@@ -89,12 +90,11 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					if (message.getClientId() == null)
 					{
 						LOG.debug("Send message to all clients");
-						for (Connection connection : connections.values())
+						for (AbstractConnection connection : connections.values())
 						{
 							try
 							{
-								sendMessage(connection.getAsyncContext().getResponse().getWriter(), message.getJson()
-									.toString());
+								connection.sendMessage(message);
 							}
 							catch (IOException e)
 							{
@@ -107,15 +107,14 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					// Send to specific client
 					else
 					{
-						Connection connection = connections.get(message.getClientId());
+						AbstractConnection connection = connections.get(message.getClientId());
 
 						if (connection != null)
 						{
 							LOG.debug("Send message to " + connection.getClientId());
 							try
 							{
-								sendMessage(connection.getAsyncContext().getResponse().getWriter(), message.getJson()
-									.toString());
+								connection.sendMessage(message);
 							}
 							catch (IOException e)
 							{
@@ -161,10 +160,10 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 				{
 					LOG.debug("Disconnect thread working");
 
-					Iterator<Connection> iterator = connections.values().iterator();
+					Iterator<AbstractConnection> iterator = connections.values().iterator();
 					while (iterator.hasNext())
 					{
-						Connection connection = iterator.next();
+						AbstractConnection connection = iterator.next();
 
 						// The client needs some time to connect
 						if ((new Date().getTime() - connection.getLastSeen().getTime()) > (TimeUnit.SECONDS
@@ -198,9 +197,9 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	 * Handle a forced disconnect i.e. connection was no longer available while sending a message
 	 * 
 	 * @param connection
-	 *            the {@link Connection}
+	 *            the {@link AbstractConnection}
 	 */
-	private void doDisconnectNoConnection(Connection connection)
+	private void doDisconnectNoConnection(AbstractConnection connection)
 	{
 		if (connection.getDisconnectEventListener() != null)
 		{
@@ -208,39 +207,6 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 		}
 
 		connections.remove(connection.getClientId());
-	}
-
-	/**
-	 * Send message
-	 * 
-	 * @param writer
-	 * @param message
-	 * @throws IOException
-	 */
-	private void sendMessage(PrintWriter writer, String message) throws IOException
-	{
-		writer.print("data: ");
-		writer.print(message);
-		writer.print("\n");
-		writer.flush();
-	}
-
-	/**
-	 * Send status message
-	 * 
-	 * @param writer
-	 * @param clientid
-	 * @param status
-	 * @throws IOException
-	 */
-	private void sendStatus(PrintWriter writer, String clientid, String status) throws IOException
-	{
-		JSONObject json = new JSONObject();
-
-		json.put("socket", clientid);
-		json.put("type", status);
-
-		sendMessage(writer, json.toString());
 	}
 
 	/**
@@ -271,7 +237,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 			JSONObject json = JSONObject.fromObject(request.getParameter("data"));
 			String clientid = json.getString("socket");
 
-			Connection connection = connections.get(clientid);
+			AbstractConnection connection = connections.get(clientid);
 
 			if (connection == null)
 			{
@@ -329,7 +295,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 				// Should be 0, but that causes a hang in Jetty on al un-connected connection acceptance threads?
 				ac.setTimeout((TimeUnit.MINUTES.toMillis(10L)));
 
-				final Connection connection = new Connection();
+				final StreamConnection connection = new StreamConnection();
 				connection.setClientId(clientId);
 				connection.setAsyncContext(ac);
 				connection.setLastSeen(new Date());
@@ -386,13 +352,13 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 					 */
 					private void disconnect() throws IOException
 					{
-						sendStatus(connection.getAsyncContext().getResponse().getWriter(), clientId, "close");
+						connection.sendStatus("close");
 						doDisconnectNoConnection(connection);
 					}
 				});
 				connections.put(clientId, connection);
 
-				sendStatus(ac.getResponse().getWriter(), clientId, "open");
+				connection.sendStatus("open");
 			}
 		}
 	}
@@ -439,7 +405,7 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 	@Override
 	public void addDisconnectEventListener(String clientid, DisconnectEventListener eventListener)
 	{
-		Connection connection = connections.get(clientid);
+		AbstractConnection connection = connections.get(clientid);
 		if (connection != null)
 		{
 			connection.setDisconnectEventListener(eventListener);
@@ -448,6 +414,60 @@ public class StreamServlet extends HttpServlet implements IStreamMessageDestinat
 		{
 			LOG.warn("No connection found voor client id " + clientid);
 		}
+	}
+
+	/**
+	 * @see org.eclipse.jetty.websocket.WebSocketFactory.Acceptor#doWebSocketConnect(javax.servlet.http.HttpServletRequest,
+	 *      java.lang.String)
+	 */
+	@Override
+	public WebSocket doWebSocketConnect(HttpServletRequest request, String protocol)
+	{
+		final String clientId = request.getParameter("id");
+
+		return new WebSocket.OnTextMessage()
+		{
+			/**
+			 * @see org.eclipse.jetty.websocket.WebSocket#onOpen(org.eclipse.jetty.websocket.WebSocket.Connection)
+			 */
+			@Override
+			public void onOpen(org.eclipse.jetty.websocket.WebSocket.Connection connection)
+			{
+				WebSocketConnection wsConn = new WebSocketConnection();
+				wsConn.setClientId(clientId);
+				wsConn.setSocket(connection);
+				wsConn.setLastSeen(new Date());
+
+				try
+				{
+					wsConn.sendStatus("open");
+				}
+				catch (IOException e)
+				{
+					LOG.error("Failed sending 'open' status to WebSocket on client " + clientId, e);
+				}
+
+				connections.put(clientId, wsConn);
+			}
+
+			/**
+			 * @see org.eclipse.jetty.websocket.WebSocket#onClose(int, java.lang.String)
+			 */
+			@Override
+			public void onClose(int closeCode, String message)
+			{
+
+			}
+
+			/**
+			 * @see org.eclipse.jetty.websocket.WebSocket.OnTextMessage#onMessage(java.lang.String)
+			 */
+			@Override
+			public void onMessage(String data)
+			{
+
+			}
+		};
 	}
 
 	/**
