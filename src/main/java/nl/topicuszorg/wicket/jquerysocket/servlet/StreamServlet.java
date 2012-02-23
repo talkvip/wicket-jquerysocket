@@ -35,12 +35,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Servlet to push messages to clients
+ * Servlet to push messages to clients, handles the different types of connections, streaming types and WebSocket ones
+ * and handles their state (connected/disconnected). clients)
  * 
  * 
  * @author Sven Rienstra
  * @author Dries Schulten
- * 
  */
 public class StreamServlet extends WebSocketServlet implements IStreamMessageDestination
 {
@@ -50,6 +50,9 @@ public class StreamServlet extends WebSocketServlet implements IStreamMessageDes
 	/** Allowed transports (WebSocket is excluded, connects in a different way) */
 	private static final List<String> ALLOWED_TRANSPORTS = Arrays.asList("streamiframe", "streamxdr", "streamxhr",
 		"sse");
+
+	/** Heartbeat type message */
+	private static final String HEARTBEAT_MSG = "heartbeat";
 
 	/** Default logger */
 	private static final Logger LOG = LoggerFactory.getLogger(StreamServlet.class);
@@ -194,7 +197,9 @@ public class StreamServlet extends WebSocketServlet implements IStreamMessageDes
 	}
 
 	/**
-	 * Handle a forced disconnect i.e. connection was no longer available while sending a message
+	 * Handle a disconnect when we can no longer send a message to the client, meaning a disconnect (almost always)
+	 * engaged from the client. A server disconnect wil be able to send 'close' to the client before effectivly closing
+	 * the connection.
 	 * 
 	 * @param connection
 	 *            the {@link AbstractConnection}
@@ -235,29 +240,7 @@ public class StreamServlet extends WebSocketServlet implements IStreamMessageDes
 		if (StringUtils.isNotBlank(request.getParameter("data")))
 		{
 			JSONObject json = JSONObject.fromObject(request.getParameter("data"));
-			String clientid = json.getString("socket");
-
-			AbstractConnection connection = connections.get(clientid);
-
-			if (connection == null)
-			{
-				LOG.error("No connection found for client" + clientid + " on heartbeat post");
-			}
-			else
-			{
-				connection.setLastSeen(new Date());
-			}
-
-			if ("heartbeat".equals(json.getString("type")))
-			{
-				Map<String, Object> map = new HashMap<String, Object>();
-				map.put("type", "heartbeat");
-
-				Message message = new Message();
-				message.setClientId(clientid);
-				message.setJson(JSONObject.fromObject(map));
-				messages.add(message);
-			}
+			handleClientMessage(json);
 		}
 	}
 
@@ -417,6 +400,40 @@ public class StreamServlet extends WebSocketServlet implements IStreamMessageDes
 	}
 
 	/**
+	 * Handle a message received from a client
+	 * 
+	 * @param json
+	 *            the {@link JSONObject}
+	 */
+	private void handleClientMessage(JSONObject json)
+	{
+		String clientid = json.getString("socket");
+		AbstractConnection connection = connections.get(clientid);
+
+		if (connection != null)
+		{
+			connection.setLastSeen(new Date());
+		}
+		else
+		{
+			LOG.error("No connection found for client" + clientid + " on client message? (" + json + ")");
+		}
+
+		if (HEARTBEAT_MSG.equals(json.getString("type")))
+		{
+			LOG.debug("Received heartbeat from client " + clientid + ", responding");
+
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put("type", HEARTBEAT_MSG);
+
+			Message message = new Message();
+			message.setClientId(clientid);
+			message.setJson(JSONObject.fromObject(map));
+			messages.add(message);
+		}
+	}
+
+	/**
 	 * @see org.eclipse.jetty.websocket.WebSocketFactory.Acceptor#doWebSocketConnect(javax.servlet.http.HttpServletRequest,
 	 *      java.lang.String)
 	 */
@@ -433,6 +450,8 @@ public class StreamServlet extends WebSocketServlet implements IStreamMessageDes
 			@Override
 			public void onOpen(org.eclipse.jetty.websocket.WebSocket.Connection connection)
 			{
+				LOG.debug("Get (WebSocket) request for client " + clientId);
+
 				WebSocketConnection wsConn = new WebSocketConnection();
 				wsConn.setClientId(clientId);
 				wsConn.setSocket(connection);
@@ -456,7 +475,8 @@ public class StreamServlet extends WebSocketServlet implements IStreamMessageDes
 			@Override
 			public void onClose(int closeCode, String message)
 			{
-
+				LOG.debug("WebSocket close, code: " + closeCode + ", message: " + message);
+				doDisconnectNoConnection(connections.get(clientId));
 			}
 
 			/**
@@ -465,7 +485,8 @@ public class StreamServlet extends WebSocketServlet implements IStreamMessageDes
 			@Override
 			public void onMessage(String data)
 			{
-
+				JSONObject json = JSONObject.fromObject(data);
+				handleClientMessage(json);
 			}
 		};
 	}
