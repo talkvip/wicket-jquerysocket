@@ -1,6 +1,6 @@
-Topicus Jquerystream
+Topicus JQuerySocket
 ======================
-Wicket push behaviour based on jquerystream library
+Wicket push behaviour based on the jquery socket library (https://github.com/flowersinthesand/jquery-socket)
 
 Repository
 ======================
