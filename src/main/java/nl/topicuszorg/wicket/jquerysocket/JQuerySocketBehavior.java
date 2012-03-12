@@ -3,6 +3,9 @@
  */
 package nl.topicuszorg.wicket.jquerysocket;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -63,6 +66,9 @@ public abstract class JQuerySocketBehavior extends AbstractDefaultAjaxBehavior
 	/** Callback to this behavior */
 	private String callBack;
 
+	/** Transports, default ws and stream */
+	private List<Transport> transports = new ArrayList<Transport>(Arrays.asList(Transport.WS, Transport.STREAM));
+
 	/**
 	 * Constructor
 	 */
@@ -81,6 +87,23 @@ public abstract class JQuerySocketBehavior extends AbstractDefaultAjaxBehavior
 	{
 		this();
 		JQuerySocketService.addDisconnectEventListener(clientid, eventListener);
+	}
+
+	/**
+	 * @return the transports
+	 */
+	public List<Transport> getTransports()
+	{
+		return transports;
+	}
+
+	/**
+	 * @param transports
+	 *            the transports to set
+	 */
+	public void setTransports(List<Transport> transports)
+	{
+		this.transports = transports;
 	}
 
 	/**
@@ -137,11 +160,38 @@ public abstract class JQuerySocketBehavior extends AbstractDefaultAjaxBehavior
 		vars.put("clientid", clientid);
 		vars.put("url", JQuerySocketService.getServletUrl());
 		vars.put("debug", LOG.isDebugEnabled());
+		vars.put("transports", getTransportsString());
 
-		response.renderJavaScript(new PackageTextTemplate(JQuerySocketBehavior.class,
-			"js/JQuerySocketBehavior.js").asString(vars), "jqs-" + clientid);
+		response.renderJavaScript(
+			new PackageTextTemplate(JQuerySocketBehavior.class, "js/JQuerySocketBehavior.js").asString(vars), "jqs-"
+				+ clientid);
 
 		super.renderHead(component, response);
+	}
+
+	/**
+	 * @return
+	 */
+	private StringBuilder getTransportsString()
+	{
+		StringBuilder transportsString = new StringBuilder();
+		boolean first = true;
+		for (Transport transport : this.transports)
+		{
+			if (!first)
+			{
+				transportsString.append(",");
+			}
+			else
+			{
+				first = false;
+			}
+
+			transportsString.append("\"");
+			transportsString.append(transport.name().toLowerCase());
+			transportsString.append("\"");
+		}
+		return transportsString;
 	}
 
 	/**
