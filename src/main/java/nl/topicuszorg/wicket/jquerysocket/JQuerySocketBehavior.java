@@ -156,7 +156,7 @@ public abstract class JQuerySocketBehavior extends AbstractDefaultAjaxBehavior
 	{
 		response.renderJavaScriptReference(SocketResourceReference.get());
 
-		Map<String, Object> vars = new MiniMap<String, Object>(3);
+		Map<String, Object> vars = new MiniMap<String, Object>(4);
 		vars.put("clientid", clientid);
 		vars.put("url", JQuerySocketService.getServletUrl());
 		vars.put("debug", LOG.isDebugEnabled());
