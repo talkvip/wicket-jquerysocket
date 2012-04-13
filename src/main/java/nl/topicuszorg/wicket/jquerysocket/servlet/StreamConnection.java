@@ -36,13 +36,13 @@ class StreamConnection extends AbstractConnection
 	 * @see nl.topicuszorg.wicket.jquerysocket.servlet.AbstractConnection#send(String)
 	 */
 	@Override
-	public void send(String data) throws IOException
+	public synchronized void send(String data) throws IOException
 	{
 		PrintWriter writer = asyncContext.getResponse().getWriter();
 
 		writer.print("data: ");
 		writer.print(data);
-		writer.print("\n");
+		writer.print("\n\n");
 		writer.flush();
 	}
 }
