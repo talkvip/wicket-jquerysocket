@@ -1,6 +1,7 @@
 var socket = $.socket("${url}", {
     transports: [${transports}],
-    id: function() { return"${clientid}" }
+    id: function() { return"${clientid}" },
+	heartbeat: 20000
 });
 
 socket.on("message", function(data){
