@@ -41,10 +41,10 @@
 
 	<scm>
 		<connection>
-			scm:ssh://git@github.com/TopicusZorg/wicket-jquerysocket.git
+			scm:git:git@github.com/TopicusZorg/wicket-jquerysocket.git
 		</connection>
 		<developerConnection>
-			scm:ssh://git@github.com/TopicusZorg/wicket-jquerysocket.git
+			scm:git:git@github.com/TopicusZorg/wicket-jquerysocket.git
 		</developerConnection>
 		<url>
 			https://github.com/TopicusZorg/wicket-jquerysocket.git
