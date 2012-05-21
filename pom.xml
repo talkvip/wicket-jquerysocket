@@ -5,10 +5,7 @@
 	<artifactId>wicket-jquerysocket</artifactId>
 	<version>0.1.0-SNAPSHOT</version>
 	<name>JQueryStream</name>
-	<description>jQuery Stream makes it easier to use two-way communication with browser-based applications and provides the unified two-way communication interface over WebSocket and HTTP protocol.
-jQuery Stream does not rely on any specific server-side technology and third-party plugin-in, so can be used with any server-side technology supporting asynchronous processing. jQuery Stream is compatible with Internet Explorer 6.0+, Firefox, Safari, Opera and Chrome.
-With jQuery Stream, you can easily develop event-driven web application.
- applications and provides the unified two-way communication interface over WebSocket and HTTP protocol.</description>
+	<description>Wicket JQuery Socket integration, allowing 'pusing' of data to the client using a WebSocket/streaming connection</description>
 
 	<developers>
 		<developer>
@@ -44,13 +41,13 @@ With jQuery Stream, you can easily develop event-driven web application.
 
 	<scm>
 		<connection>
-			scm:git:git://github.com/TopicusZorg/wicket-jquerystream.git
+			scm:git:git://github.com/TopicusZorg/wicket-jquerysocket.git
 		</connection>
 		<developerConnection>
-			scm:git:ssh://git@github.com/TopicusZorg/wicket-jquerystream.git
+			scm:git|ssh://git@github.com/TopicusZorg/wicket-jquerysocket.git
 		</developerConnection>
 		<url>
-			https://github.com/TopicusZorg/wicket-jquerystream.git
+			https://github.com/TopicusZorg/wicket-jquerysocket.git
 		</url>
 	</scm>
 
@@ -228,6 +225,6 @@ With jQuery Stream, you can easily develop event-driven web application.
 
 	<properties>
 		<jetty.version>8.1.3.v20120416</jetty.version>
-		<wicket.version>1.5.5</wicket.version>
+		<wicket.version>1.5.6</wicket.version>
 	</properties>
 </project>
