@@ -1,23 +1,24 @@
 package nl.topicuszorg.wicket.jquerysocket.servlet;
 
 import java.io.IOException;
+import java.nio.CharBuffer;
 
-import org.eclipse.jetty.websocket.WebSocket;
+import org.apache.catalina.websocket.StreamInbound;
 
 /**
- * WebSocket specific connection for Jetty
+ * WebSocket specific connection for Tomcat
  * 
- * @author Dries Schulten
+ * @author remcozigterman
  */
-class WebSocketConnection extends AbstractConnection
+class StreamInboundConnection extends AbstractConnection
 {
 	/** WebSocket connection */
-	private WebSocket.Connection socket;
+	private StreamInbound socket;
 
 	/**
 	 * @return the socket
 	 */
-	public WebSocket.Connection getSocket()
+	public StreamInbound getSocket()
 	{
 		return socket;
 	}
@@ -26,7 +27,7 @@ class WebSocketConnection extends AbstractConnection
 	 * @param socket
 	 *            the socket to set
 	 */
-	public void setSocket(WebSocket.Connection socket)
+	public void setSocket(StreamInbound socket)
 	{
 		this.socket = socket;
 	}
@@ -37,6 +38,7 @@ class WebSocketConnection extends AbstractConnection
 	@Override
 	public void send(String data) throws IOException
 	{
-		socket.sendMessage(data);
+		socket.getWsOutbound().writeTextMessage(CharBuffer.wrap(data));
+		socket.getWsOutbound().flush();
 	}
 }

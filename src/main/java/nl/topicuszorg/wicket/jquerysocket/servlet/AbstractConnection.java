@@ -11,7 +11,7 @@ import nl.topicuszorg.wicket.jquerysocket.DisconnectEventListener;
  * 
  * @author Dries Schulten
  */
-abstract class AbstractConnection
+public abstract class AbstractConnection
 {
 	/** The id of the client */
 	private String clientId;

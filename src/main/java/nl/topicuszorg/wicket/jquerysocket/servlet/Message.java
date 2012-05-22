@@ -5,6 +5,7 @@ import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
 
 import net.sf.json.JSON;
+import nl.topicuszorg.wicket.jquerysocket.thread.NotifierThread;
 
 /**
  * Internal message structure
@@ -12,7 +13,7 @@ import net.sf.json.JSON;
  * @author sven
  * 
  */
-class Message implements Serializable, Delayed
+public class Message implements Serializable, Delayed
 {
 	/** */
 	private static final long serialVersionUID = 1L;
@@ -73,7 +74,7 @@ class Message implements Serializable, Delayed
 		{
 			return 0;
 		}
-		return unit.convert(time - StreamServlet.now(), TimeUnit.NANOSECONDS);
+		return unit.convert(time - NotifierThread.now(), TimeUnit.NANOSECONDS);
 	}
 
 	/**
