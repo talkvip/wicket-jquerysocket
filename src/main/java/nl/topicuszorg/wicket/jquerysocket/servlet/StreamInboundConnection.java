@@ -39,6 +39,5 @@ class StreamInboundConnection extends AbstractConnection
 	public void send(String data) throws IOException
 	{
 		socket.getWsOutbound().writeTextMessage(CharBuffer.wrap(data));
-		socket.getWsOutbound().flush();
 	}
 }

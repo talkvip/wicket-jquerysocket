@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
@@ -62,10 +61,11 @@ public class StreamServletTomcat extends WebSocketServlet implements IStreamMess
 	/** Stream servlet attribute */
 	public static final String STREAM_SERVLET_ATTRIBUTE = "streamservlet";
 
-	private final AtomicInteger connectionIds = new AtomicInteger(0);
-
 	/** Map of currently known connections */
 	private final Map<String, AbstractConnection> connections = new ConcurrentHashMap<String, AbstractConnection>();
+
+	/** Ugly: but we need to have the client uid on hand in the <code>createWebSocketInbound</code> function... */
+	private final ThreadLocal<String> currentId = new ThreadLocal<String>();
 
 	/**
 	 * Messages to send
@@ -142,6 +142,8 @@ public class StreamServletTomcat extends WebSocketServlet implements IStreamMess
 		String key = request.getHeader("Sec-WebSocket-Key");
 		if (key != null)
 		{
+			final String clientId = request.getParameter("id");
+			currentId.set(clientId);
 			super.doGet(request, response);
 		}
 		else
@@ -375,16 +377,24 @@ public class StreamServletTomcat extends WebSocketServlet implements IStreamMess
 	@Override
 	protected StreamInbound createWebSocketInbound(String subProtocol)
 	{
-		return new WebSocketStreamInbound(connectionIds.incrementAndGet());
+		StreamInbound inbound = new WebSocketStreamInbound(currentId.get());
+		currentId.set(null);
+		return inbound;
 	}
 
 	private final class WebSocketStreamInbound extends MessageInbound
 	{
-		private String clientId;
+		private final String clientId;
 
-		public WebSocketStreamInbound(int clientId)
+		/**
+		 * Construct
+		 * 
+		 * @param clientId
+		 *            the current client id
+		 */
+		public WebSocketStreamInbound(String clientId)
 		{
-			this.clientId = String.valueOf(clientId);
+			this.clientId = clientId;
 		}
 
 		@Override
@@ -431,10 +441,8 @@ public class StreamServletTomcat extends WebSocketServlet implements IStreamMess
 		@Override
 		protected void onTextMessage(CharBuffer message) throws IOException
 		{
-			JSONObject json = JSONObject.fromObject(message);
+			JSONObject json = JSONObject.fromObject(message.toString());
 			handleClientMessage(json);
 		}
-
 	}
-
 }
