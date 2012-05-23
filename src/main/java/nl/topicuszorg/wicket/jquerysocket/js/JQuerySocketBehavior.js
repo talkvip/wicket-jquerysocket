@@ -6,7 +6,6 @@ var socket = $.socket("${url}", {
 
 socket.on("message", function(data){
 	try {
-		console.log('Data: ' + data);
     	streamLog(data, "debug");
     	eval(data);
     } catch(ex) {
