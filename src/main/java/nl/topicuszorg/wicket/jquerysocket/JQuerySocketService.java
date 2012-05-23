@@ -32,7 +32,7 @@ public final class JQuerySocketService
 	 * @param clientid
 	 * @param javascript
 	 */
-	protected static void sendMessage(String clientid, String javascript)
+	public static void sendMessage(String clientid, String javascript)
 	{
 		JSONObject json = new JSONObject();
 		json.put("type", "message");
