@@ -115,6 +115,7 @@
 		var list = [],
 			stack = [],
 			memory,
+			result,
 			firing,
 			firingStart,
 			firingLength,
@@ -127,7 +128,7 @@
 				firingStart = 0;
 				firingLength = list.length;
 				for (; firingIndex < firingLength; firingIndex++) {
-					list[firingIndex].apply(context, args);
+					result = list[firingIndex].apply(context, args);
 				}
 				firing = false;
 			},
@@ -165,6 +166,8 @@
 					}
 				},
 				fire: function(context, args) {
+					var ret;
+					
 					if (stack) {
 						if (firing) {
 							if (!deferred) {
@@ -173,7 +176,11 @@
 						} else if (!(deferred && memory)) {
 							fire(context, args);
 						}
+						ret = result;
+						result = undefined;
 					}
+					
+					return ret;
 				},
 				lock: function() {
 					stack = undefined;
@@ -242,8 +249,6 @@
 			reconnectTry,
 			// Map of the session-scoped values
 			session = {},
-			// From jQuery.ajax
-			parts = /^([\w\+\.\-]+:)(?:\/\/([^\/?#:]*)(?::(\d+))?)?/.exec(url.toLowerCase()),
 			// Socket object
 			self = {
 				// Finds the value of an option
@@ -309,7 +314,7 @@
 					var event = events[type];
 					
 					if (event) {
-						event.fire(self, args);
+						session.result = event.fire(self, args);
 					}
 					
 					return this;
@@ -374,11 +379,7 @@
 						}
 						
 						eventId++;
-						if (callback) {
-							replyCallbacks[eventId] = callback;
-						}
-						
-						// Delegates to the transport
+						replyCallbacks[eventId] = callback;
 						transport.send(isBinary(data) ? data : opts.outbound.call(self, {
 							id: eventId, 
 							socket: id, 
@@ -401,14 +402,13 @@
 						}
 					}
 					
-					// Delegates to the transport
 					if (transport) {
 						transport.close();
 					}
 					
 					// Fires the close event immediately for transport which doesn't give feedback on disconnection
 					if (reason || !transport || !transport.feedback) {
-						self.fire("close", [reason || "aborted"]);
+						self.fire("close", [reason || "close"]);
 					}
 					
 					return this;
@@ -424,19 +424,15 @@
 					} else {
 						$.each(isBinary(data) ? [{type: "message", data: data}] : $.makeArray(opts.inbound.call(self, data)), 
 						function(i, event) {
-							var args = [event.data], latch;
-							
 							opts.lastEventId = event.id;
+							session.result = null;
+							self.fire(event.type, [event.data]);
+							
 							if (event.reply) {
-								args.push(function(result) {
-									if (!latch) {
-										latch = true;
-										self.send("reply", {id: event.id, data: result});
-									}
+								$.when(session.result).done(function(result) {
+									self.send("reply", {id: event.id, data: result});
 								});
 							}
-							
-							self.fire(event.type, args);
 						});
 					}
 					
@@ -451,7 +447,9 @@
 						lastEventId: opts.lastEventId
 					}, params));
 				}
-			};
+			},
+			// From jQuery.ajax
+			parts = /^([\w\+\.\-]+:)(?:\/\/([^\/?#:]*)(?::(\d+))?)?/.exec(url.toLowerCase());
 		
 		opts = $.extend(true, {}, defaults, options);
 		if (options) {
@@ -599,7 +597,7 @@
 				var r = Math.random() * 16 | 0,
 					v = c === "x" ? r : (r & 0x3 | 0x8);
 				
-				return v.toString(16);
+			    return v.toString(16);
 			});
 		},
 		url: function(url, params) {
@@ -631,8 +629,8 @@
 			
 			// String.prototype.split is not reliable cross-browser
 			while (match = reol.exec(chunk)) {
-				lines.push(chunk.substring(i, match.index));
-				i = match.index + match[0].length;
+			    lines.push(chunk.substring(i, match.index));
+			    i = match.index + match[0].length;
 			}
 			lines.push(chunk.length === i ? "" : chunk.substring(i));
 			
@@ -690,10 +688,10 @@
 						socket.session("event", event)._notify(event.data);
 					};
 					ws.onerror = function(event) {
-						socket.session("event", event).fire("close", [aborted ? "aborted" : "error"]);
+						socket.session("event", event).fire("close", [aborted ? "close" : "error"]);
 					};
 					ws.onclose = function(event) {
-						socket.session("event", event).fire("close", [aborted ? "aborted" : event.wasClean ? "done" : "error"]);
+						socket.session("event", event).fire("close", [aborted ? "close" : event.wasClean ? "done" : "error"]);
 					};
 				},
 				send: function(data) {
@@ -848,7 +846,7 @@
 								stop();
 							}
 							
-							socket.fire("close", [aborted ? "aborted" : xhr.status === 200 ? "done" : "error"]);
+							socket.fire("close", [aborted ? "close" : xhr.status === 200 ? "done" : "error"]);
 						}
 					};
 					
@@ -1002,7 +1000,7 @@
 						}
 					},
 					fail = function(jqXHR, reason) {
-						socket.fire("close", [reason === "abort" ? "aborted" : "error"]);
+						socket.fire("close", [reason === "abort" ? "close" : "error"]);
 					};
 				
 				socket.session("url", url);
@@ -1101,7 +1099,7 @@
 						}
 					},
 					fail = function(jqXHR, reason) {
-						socket.fire("close", [reason === "abort" ? "aborted" : "error"]);
+						socket.fire("close", [reason === "abort" ? "close" : "error"]);
 					};
 				
 				socket.session("url", url);
