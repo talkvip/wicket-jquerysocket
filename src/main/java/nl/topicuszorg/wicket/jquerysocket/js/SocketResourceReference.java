@@ -1,13 +1,13 @@
 package nl.topicuszorg.wicket.jquerysocket.js;
 
-import org.apache.wicket.request.resource.JavaScriptResourceReference;
+import org.apache.wicket.resource.JQueryPluginResourceReference;
 
 /**
  * Resource reference to the jquery stream javascript files
  * 
  * @author Dries Schulten
  */
-public class SocketResourceReference extends JavaScriptResourceReference
+public class SocketResourceReference extends JQueryPluginResourceReference
 {
 	/** Default */
 	private static final long serialVersionUID = 1L;

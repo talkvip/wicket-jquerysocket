@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import nl.topicuszorg.wicket.jquerysocket.events.IPushJavaScriptEvent;
 import nl.topicuszorg.wicket.jquerysocket.events.IPushUpdateEvent;
+import nl.topicuszorg.wicket.jquerysocket.js.SocketBehaviourResourceReference;
 import nl.topicuszorg.wicket.jquerysocket.js.SocketResourceReference;
 import nl.topicuszorg.wicket.jquerysocket.servlet.StreamServlet;
 
@@ -19,9 +20,10 @@ import org.apache.wicket.Component;
 import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.event.IEvent;
-import org.apache.wicket.markup.html.IHeaderResponse;
+import org.apache.wicket.markup.head.IHeaderResponse;
+import org.apache.wicket.markup.head.JavaScriptHeaderItem;
+import org.apache.wicket.markup.head.OnDomReadyHeaderItem;
 import org.apache.wicket.util.collections.MiniMap;
-import org.apache.wicket.util.template.PackageTextTemplate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -154,7 +156,7 @@ public abstract class JQuerySocketBehavior extends AbstractDefaultAjaxBehavior
 	@Override
 	public void renderHead(Component component, IHeaderResponse response)
 	{
-		response.renderJavaScriptReference(SocketResourceReference.get());
+		response.render(JavaScriptHeaderItem.forReference(SocketResourceReference.get()));
 
 		Map<String, Object> vars = new MiniMap<String, Object>(4);
 		vars.put("clientid", clientid);
@@ -162,9 +164,7 @@ public abstract class JQuerySocketBehavior extends AbstractDefaultAjaxBehavior
 		vars.put("debug", LOG.isDebugEnabled());
 		vars.put("transports", getTransportsString());
 
-		response.renderJavaScript(
-			new PackageTextTemplate(JQuerySocketBehavior.class, "js/JQuerySocketBehavior.js").asString(vars), "jqs-"
-				+ clientid);
+		response.render(OnDomReadyHeaderItem.forScript(SocketBehaviourResourceReference.render(vars)));
 
 		super.renderHead(component, response);
 	}
