@@ -29,7 +29,6 @@ import nl.topicuszorg.wicket.jquerysocket.IStreamMessageDestination;
 import nl.topicuszorg.wicket.jquerysocket.thread.DisconnectThread;
 import nl.topicuszorg.wicket.jquerysocket.thread.NotifierThread;
 
-import org.apache.commons.lang.StringUtils;
 import org.eclipse.jetty.websocket.WebSocket;
 import org.eclipse.jetty.websocket.WebSocketServlet;
 import org.slf4j.Logger;
@@ -160,9 +159,11 @@ public class StreamServlet extends WebSocketServlet implements IStreamMessageDes
 	{
 		response.setHeader("Access-Control-Allow-Origin", "*");
 
-		if (StringUtils.isNotBlank(request.getParameter("data")))
+		String data = request.getReader().readLine();
+		if (data != null)
 		{
-			JSONObject json = JSONObject.fromObject(request.getParameter("data"));
+			data = data.substring("data=".length());
+			JSONObject json = JSONObject.fromObject(data);
 			handleClientMessage(json);
 		}
 	}
