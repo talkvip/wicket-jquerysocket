@@ -160,7 +160,7 @@ public abstract class JQuerySocketBehavior extends AbstractDefaultAjaxBehavior
 
 		Map<String, Object> vars = new MiniMap<String, Object>(4);
 		vars.put("clientid", clientid);
-		vars.put("url", JQuerySocketService.getServletUrl());
+		vars.put("url", getServletUrl());
 		vars.put("debug", LOG.isDebugEnabled());
 		vars.put("transports", getTransportsString());
 
@@ -170,7 +170,15 @@ public abstract class JQuerySocketBehavior extends AbstractDefaultAjaxBehavior
 	}
 
 	/**
-	 * @return
+	 * @return the stream servlet URL
+	 */
+	protected String getServletUrl()
+	{
+		return JQuerySocketService.getServletUrl();
+	}
+
+	/**
+	 * @return gives the transports as a String
 	 */
 	private StringBuilder getTransportsString()
 	{
