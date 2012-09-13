@@ -328,10 +328,7 @@
 								// Fires the connecting event and connects
 								if (transport) {
 									self.fire("connecting");
-									// Gives the user the opportunity to bind connecting event handlers
-									setTimeout(function() {
-										transport.open();
-									}, 50);
+									transport.open();
 								} else {
 									self.fire("close", "notransport");
 								}
@@ -452,11 +449,7 @@
 				// fires events from the server
 				_fire: function(data, isChunk) {
 					if (isChunk) {
-						// Strips off the padding of the chunk
-						// the first chunk of some streaming transports and every chunk for Android browser 2 and 3 has padding
-						// technically, regular expression, /\S/.test("\xA0") ? (/^[\s\xA0]+/g) : /^\s+/g, is right according to jQuery.trim
-						// but, I believe no one use non-breaking spaces when printing padding
-						data = opts.streamParser.call(self, data.replace(/^\s+/g, ""));
+						data = opts.streamParser.call(self, data);
 						while (data.length) {
 							self._fire(data.shift());
 						}
@@ -587,14 +580,9 @@
 								broadcast: function(obj) {
 									var string = $.stringifyJSON(obj);
 									storage.setItem(name, string);
-									// Storage event is not fired in window which did trigger that event
-									// but, IE does not
-									// TODO remove and use identifier instead
-									if (!$.browser.msie) {
-										setTimeout(function() {
-											listener(string);
-										}, 50);
-									}
+									setTimeout(function() {
+										listener(string);
+									}, 50);
 								},
 								get: function(key) {
 									return $.parseJSON(storage.getItem(name + "-" + key));
@@ -809,19 +797,19 @@
 		return self.open();
 	}
 	
-	$.support.storageEvent = (function() {
-		var storage = window.localStorage;
-		if (storage) {
-			try {
-				storage.setItem("t", "t");
-				storage.removeItem("t");
-				// Internet Explorer 9 has no StorageEvent object but supports the storage event
-				return !!window.StorageEvent || Object.prototype.toString.call(storage) === "[object Storage]";
-			} catch (e) {}
-		}
+	function finalize() {
+		var url, socket;
 		
-		return false;
-	})();
+		for (url in sockets) {
+			socket = sockets[url];
+			if (socket.state() !== "closed") {
+				socket.close();
+			}
+			
+			// To run the test suite
+			delete sockets[url];
+		}
+	}
 	
 	// Default options
 	defaults = {
@@ -872,6 +860,10 @@
 			// http://www.w3.org/TR/eventsource/#event-stream-interpretation
 			var reol = /\r\n|[\r\n]/g, lines = [], data = this.session("data"), array = [], i = 0, 
 				match, line;
+			
+			// Strips off the left padding of the chunk
+			// the first chunk of some streaming transports and every chunk for Android browser 2 and 3 has padding
+			chunk = chunk.replace(/^\s+/g, "");
 			
 			// String.prototype.split is not reliable cross-browser
 			while (match = reol.exec(chunk)) {
@@ -958,11 +950,9 @@
 								var string = $.stringifyJSON(obj);
 								
 								storage.setItem(name, string);
-								if (!$.browser.msie) {
-									setTimeout(function() {
-										listener(string);
-									}, 50);
-								}
+								setTimeout(function() {
+									listener(string);
+								}, 50);
 							}
 						};
 					},
@@ -1104,7 +1094,10 @@
 					
 					parentOpened = connector.init();
 					if (parentOpened) {
-						socket.fire("open");
+						// Gives the user the opportunity to bind connecting event handlers
+						setTimeout(function() {
+							socket.fire("open");
+						}, 50);
 					}
 				},
 				send: function(event) {
@@ -1580,22 +1573,25 @@
 		}
 	};
 	
-	// Closes all socket when the document is unloaded 
+	$.support.storageEvent = (function() {
+		var storage = window.localStorage;
+		if (storage) {
+			try {
+				storage.setItem("t", "t");
+				storage.removeItem("t");
+				// The storage event of Internet Explorer and Firefox 3 works strangely
+				return window.StorageEvent && !$.browser.msie && !($.browser.mozilla && $.browser.version.split(".")[0] === "1");
+			} catch (e) {}
+		}
+		
+		return false;
+	})();
+	
 	$(window).on("unload.socket", function(event) {
 		// Check the unload event is fired by the browser
 		unloading = !!event.originalEvent;
-		
-		var url, socket;
-		
-		for (url in sockets) {
-			socket = sockets[url];
-			if (socket.state() !== "closed") {
-				socket.close();
-			}
-			
-			// To run the test suite
-			delete sockets[url];
-		}
+		// Closes all sockets when the document is unloaded 
+		finalize();
 	});
 	
 	$.socket = function(url, options) {
@@ -1624,5 +1620,6 @@
 	
 	$.socket.defaults = defaults;
 	$.socket.transports = transports;
+	$.socket.finalize = finalize;
 	
 })(jQuery);
