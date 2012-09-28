@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>nl.topicuszorg.wicket-extensions</groupId>
 	<artifactId>wicket-jquerysocket</artifactId>
-	<version>0.3.0-SNAPSHOT</version>
+	<version>0.3.0</version>
 	<name>JQueryStream</name>
 	<description>Wicket JQuery Socket integration, allowing 'pusing' of data to the client using a WebSocket/streaming connection</description>
 
