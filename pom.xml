@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>nl.topicuszorg.wicket-extensions</groupId>
 	<artifactId>wicket-jquerysocket</artifactId>
-	<version>0.3.0</version>
+	<version>0.3.1-SNAPSHOT</version>
 	<name>JQueryStream</name>
 	<description>Wicket JQuery Socket integration, allowing 'pusing' of data to the client using a WebSocket/streaming connection</description>
 
@@ -240,6 +240,6 @@
 	<properties>
 		<jetty.version>8.1.3.v20120416</jetty.version>
 		<tomcat.version>7.0.27</tomcat.version>
-		<wicket.version>6.0.0</wicket.version>
+		<wicket.version>6.1.1</wicket.version>
 	</properties>
 </project>

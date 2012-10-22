@@ -7,6 +7,8 @@ import net.sf.json.JSONObject;
 import nl.topicuszorg.wicket.jquerysocket.servlet.StreamServlet;
 
 import org.apache.wicket.protocol.http.WebApplication;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Internal class to pass messages to the correct destination
@@ -18,6 +20,9 @@ public final class JQuerySocketService
 
 	/** Push target */
 	private static IStreamMessageDestination destination;
+
+	/** default logger */
+	public static final Logger LOG = LoggerFactory.getLogger(JQuerySocketService.class);
 
 	/**
 	 * Util class
@@ -34,11 +39,18 @@ public final class JQuerySocketService
 	 */
 	public static void sendMessage(String clientid, String javascript)
 	{
-		JSONObject json = new JSONObject();
-		json.put("type", "message");
-		json.put("data", javascript);
+		if (javascript != null)
+		{
+			JSONObject json = new JSONObject();
+			json.put("type", "message");
+			json.put("data", javascript);
 
-		getDestination().sendMessage(clientid, json);
+			getDestination().sendMessage(clientid, json);
+		}
+		else
+		{
+			LOG.warn("Ignore message to client " + clientid + " because there is no data");
+		}
 	}
 
 	/**

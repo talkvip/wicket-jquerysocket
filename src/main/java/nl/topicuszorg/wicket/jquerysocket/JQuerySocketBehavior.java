@@ -136,7 +136,7 @@ public abstract class JQuerySocketBehavior extends AbstractDefaultAjaxBehavior
 	 */
 	public void callbackBehavior()
 	{
-		JQuerySocketService.sendMessage(clientid, callBack.toString());
+		JQuerySocketService.sendMessage(clientid, callBack);
 	}
 
 	/**
